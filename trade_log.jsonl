@@ -1,0 +1,3 @@
+{"date":"2026-08-26","timestamp":"03:30:23","stage":"loss_limit_check","daily_realized_usd":0.0,"weekly_realized_usd":0.0,"daily_pnl_pct":0.0,"weekly_pnl_pct":0.0,"entries_halted":false,"halt_reason":null}
+{"date":"2026-08-26","timestamp":"03:30:23","symbol":"SMTC","stage":"risk_check","passed":false,"conviction":"high","risk_flags":[],"pct_below_52wk_high":0.2813,"proposal_date":"2026-08-26","reason":"entry_gate.py failed to run — buy skipped this cycle, verify manually","notes":"pending thesis omitted current_price, so the required --thesis-price input was unavailable"}
+{"date":"2026-08-26","timestamp":"03:30:23","stage":"cycle_summary","mode":"dry_run","candidates_considered":1,"orders_reviewed":0,"orders_placed":0}
