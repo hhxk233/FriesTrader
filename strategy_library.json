@@ -1,0 +1,9 @@
+{
+  "_comment": "Committee-owned, evidence-based strategy memory. It is advisory only and never overrides PHASE_A_TASK.md, PHASE_B_TASK.md, risk_rules.json hard limits, execution.mode, or order gates.",
+  "version": 1,
+  "revision": 0,
+  "last_updated_central": null,
+  "strategies": [],
+  "evidence_ledger": [],
+  "change_log": []
+}

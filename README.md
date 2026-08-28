@@ -35,10 +35,10 @@ nervous. Here's what actually stands between a thesis and an order:
   `scripts/` rather than the model doing arithmetic in prose. Same
   inputs always produce the same numbers, and a good story never cancels
   a stop-loss.
-- **New deployments start in `dry_run` and stay there** for a minimum
-  number of cycles (`dry_run_min_cycles_before_live`) before a live
-  order is even possible, so you can watch it screen and reason before
-  it touches real money.
+- **New deployments start in `dry_run` and stay there** until both the
+  distinct-date minimum (`dry_run_min_cycles_before_live`) and the successful
+  Robinhood preview minimum (`dry_run_min_successful_reviews_before_live`) are
+  met before a live order is even possible.
 - **Only you can flip `execution.mode` to `"live"`** — the agent is
   explicitly barred from ever changing this itself, and refuses to
   place live orders while `dry_run`.
@@ -207,16 +207,20 @@ improvements.
 3. Create a scan via the Robinhood MCP's `create_scan` tool — whatever
    screening conditions you like — then paste its ID into
    `universe.supplementary_scan_id`. Phase A calls this scan every run
-   to surface movers outside your watchlist — left as the placeholder,
-   that call fails every cycle.
+   to surface movers outside your watchlist. It examines up to
+   `supplementary_scan_pool_max_candidates`, prioritizes names that already
+   fit the existing extension rule, then sends at most
+   `supplementary_scan_max_candidates` into full research. Left as the
+   placeholder, that call fails every cycle.
 4. Fill in `wash_sale_avoidance.linked_accounts` with every Robinhood
    account number you personally control, not just this one — if this is
    genuinely the only account you trade in, a single-entry list (just
    this account's number) is enough. Leave `enabled: true` unless you
    specifically want buys never blocked on wash-sale grounds.
-5. Keep `execution.mode` set to `"dry_run"`. Leave it there for at least
-   the number of cycles set in `dry_run_min_cycles_before_live` — don't
-   shortcut this.
+5. Keep `execution.mode` set to `"dry_run"`. Leave it there until both
+   `dry_run_min_cycles_before_live` distinct dry-run dates and
+   `dry_run_min_successful_reviews_before_live` successful Robinhood order
+   previews are recorded — don't shortcut either evidence requirement.
 6. After each cycle, read `trade_log.jsonl` yourself. Look specifically
    at rejected candidates and stop-loss triggers, not just the trades
    that "worked" — that's where you'll see if the reasoning step is
@@ -289,7 +293,7 @@ Read risk_rules.json fresh from this checkout every run — never assume prior v
 
 Follow PHASE_A_TASK.md's Steps 1-3 exactly, including the screened/thesis/summary line shapes and the End-of-run summary section. Overwrite pending_proposals.jsonl in this checkout with this run's results (do not append to prior contents). Do NOT touch trade_log.jsonl.
 
-Hard stop: place_equity_order, review_equity_order, place_option_order, review_option_order, cancel_equity_order, and cancel_option_order should not be available to you in this session (exclude them at the connector level if your MCP setup allows it) — do not attempt them regardless, and do not check or reference execution.mode.
+Hard stop: the shared Robinhood MCP may expose place_equity_order, review_equity_order, place_option_order, review_option_order, cancel_equity_order, and cancel_option_order, but Phase A must not call any of them. Tool availability does not authorize execution here. Do not check or reference execution.mode.
 
 When pending_proposals.jsonl is fully written, commit and push it back to this repo's main branch:
 git add pending_proposals.jsonl
@@ -313,10 +317,12 @@ Use the date as the 'date' field and the time as the 'timestamp' field (time-of-
 
 Read risk_rules.json fresh from this checkout every run — never assume prior values or cache across runs. Read pending_proposals.jsonl and trade_log.jsonl fresh from this checkout too.
 
-Follow PHASE_B_TASK.md's Steps 4-9 exactly, including the idempotency rule (key off each candidate's own proposal_date, not today's date), the dry-run cycle count rule, the priority/tiebreak rules, and the live-order gate (Step 6 for sells, Step 8 for buys). This task is authorized to place real live orders only under that gate's narrow, explicit condition. Do not add, remove, or loosen any condition of that gate on your own judgment, and never change execution.mode or any other value in risk_rules.json yourself.
+Follow PHASE_B_TASK.md's Steps 4-9 exactly, including the idempotency rule (prefer each candidate's exact `proposal_id`; use symbol + `proposal_date` only for a legacy candidate without one), the dry-run readiness rule, the priority/tiebreak rules, and the live-order gate (Step 6 for sells, Step 8 for buys). This task is authorized to place real live orders only under that gate's narrow, explicit condition. Do not add, remove, or loosen any condition of that gate on your own judgment, and never change execution.mode or any other value in risk_rules.json yourself.
 
-Append every decision to trade_log.jsonl (do not touch pending_proposals.jsonl except to read it). When done, commit and push trade_log.jsonl back to this repo's main branch:
-git add trade_log.jsonl
+The launcher has already granted unattended approval for this Phase B run's Robinhood MCP tool calls. Do not ask for interactive confirmation or pause for a human response. That tool-call approval only allows the calls to run: `review_equity_order` is still mandatory, and `place_equity_order` remains forbidden unless every existing live-order gate condition in PHASE_B_TASK.md and risk_rules.json is true.
+
+Append every decision to trade_log.jsonl (do not touch pending_proposals.jsonl except to read it), then regenerate trade_log_recent.md. When done, commit and push both Phase B outputs back to this repo's main branch:
+git add trade_log.jsonl trade_log_recent.md
 git commit -m "Phase B run <date> <timestamp>"
 git push origin main
 If the push is rejected (e.g. a race with another run), run 'git pull --rebase origin main' once and retry the push once. If it still fails, report the exact conflict/error in your final summary rather than force-pushing or discarding either side's changes — this file is an append-only audit trail, treat any conflict here as serious and report it clearly rather than guessing how to resolve it.
@@ -335,11 +341,16 @@ End with a concise summary of what you checked, approved, rejected, and (if appl
   "timestamp": "HH:mm:ss",
   "symbol": "XXXX",
   "stage": "thesis",
+  "proposal_id": "YYYY-MM-DDTHH:mm:ss|XXXX",
   "thesis": "1-3 sentences on what changed and why it might matter",
   "conviction": "low | medium | high",
   "invalidation": "what would prove this thesis wrong",
   "direction": "long | avoid | exit_existing",
   "risk_flags": ["..."],
+  "current_price": 84.20,
+  "quote_symbol": "XXXX",
+  "quote_as_of": "YYYY-MM-DDTHH:mm:ssZ",
+  "high_52_weeks": 99.00,
   "pct_below_52wk_high": 0.15,
   "sources": ["Outlet Name: https://...", "..."]
 }
@@ -358,8 +369,8 @@ truth — one line per decision; `trade_log_recent.md`, shown under "See
 it in action" above, is just its daily recap):
 
 ```json
-{"date": "2026-07-10", "timestamp": "08:38:10", "symbol": "EXAMPLE", "stage": "risk_check", "passed": true, "conviction": "medium", "risk_flags": [], "pct_below_52wk_high": 0.08, "proposal_date": "2026-07-09", "position_size_usd": 60.00, "concurrent_positions_after": 2, "cash_remaining_after": 340.00, "cash_buffer_after_pct": 0.34}
-{"date": "2026-07-09", "timestamp": "08:35:12", "symbol": "EXAMPLE", "stage": "order", "mode": "dry_run", "action": "buy", "dollar_amount": 60.00, "quote_ask": 84.20, "quantity": 0.712, "would_execute": true, "review_alerts": "none (order_checks empty)", "proposal_date": "2026-07-09"}
+{"date": "2026-07-10", "timestamp": "08:38:10", "symbol": "EXAMPLE", "stage": "risk_check", "passed": true, "conviction": "medium", "risk_flags": [], "pct_below_52wk_high": 0.08, "proposal_date": "2026-07-09", "proposal_id": "2026-07-09T16:30:00|EXAMPLE", "position_size_usd": 60.00, "concurrent_positions_after": 2, "cash_remaining_after": 340.00, "cash_buffer_after_pct": 0.34}
+{"date": "2026-07-10", "timestamp": "08:38:12", "symbol": "EXAMPLE", "stage": "order", "mode": "dry_run", "action": "buy", "dollar_amount": 60.00, "quote_ask": 84.20, "quantity": 0.712, "would_execute": true, "review_succeeded": true, "review_alerts": "none (order_checks empty)", "proposal_date": "2026-07-09", "proposal_id": "2026-07-09T16:30:00|EXAMPLE"}
 {"date": "2026-07-10", "timestamp": "08:38:30", "symbol": "OTHER", "stage": "stop_loss", "entry_price": 100.00, "current_price": 92.50, "stop_pct_used": 0.075, "stdev_20d": 0.030, "drawdown_pct": 0.075, "triggered": true, "action": "sell_full_position"}
 ```
 

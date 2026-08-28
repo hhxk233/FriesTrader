@@ -2,21 +2,24 @@
   "_comment": "These are hard numeric limits. Claude's reasoning/thesis step may NEVER override these values. Any proposed trade that violates a rule here must be rejected before it reaches review_equity_order, with no exceptions regardless of how strong the thesis sounds.",
 
   "account_number": "YOUR_ACCOUNT_NUMBER_HERE",
-  "starting_capital_usd": 500.00,
+  "starting_capital_usd": 1000.00,
   "starting_capital_usd_note": "Net deposits minus withdrawals, not live total_value -- excludes trading P&L so the loss-limit base doesn't drift with performance. Human updates by hand after each deposit/withdrawal.",
 
   "execution": {
     "mode": "dry_run",
-    "note": "mode must be manually changed from 'dry_run' to 'live' by the human. Claude must never change this value itself, and must refuse to place live orders while mode is 'dry_run'.",
-    "dry_run_min_cycles_before_live": 10
+    "note": "mode must be manually changed from 'dry_run' to 'live' by the human. The agent must never change this value itself, and must refuse to place live orders while mode is 'dry_run'. Both the distinct dry-run date threshold and the successful Robinhood preview threshold must also be met before live placement.",
+    "dry_run_min_cycles_before_live": 10,
+    "dry_run_min_successful_reviews_before_live": 5
   },
 
   "universe": {
-    "watchlist_name": "YOUR_WATCHLIST_NAME_HERE",
+    "watchlist_name": "FriesTrader Core",
     "watchlist_max_candidates": 25,
-    "supplementary_scan_id": "YOUR_SCAN_ID_HERE",
+    "supplementary_scan_id": "d5d3e783-9e3b-4fc0-8809-7da206566985",
+    "supplementary_scan_pool_max_candidates": 15,
     "supplementary_scan_max_candidates": 5,
-    "supplementary_scan_note": "Robinhood scan -- define whatever screening conditions you like (relative volume, market cap, RSI, etc.) via the Robinhood MCP's create_scan tool, then paste its scan_id here. Additive to watchlist_max_candidates, not shared with it -- the watchlist's own slots are never crowded out by scan results.",
+    "supplementary_scan_prefer_execution_fit": true,
+    "supplementary_scan_note": "Robinhood scan -- define whatever screening conditions you like (relative volume, market cap, RSI, etc.) via the Robinhood MCP's create_scan tool, then paste its scan_id here. Phase A takes a provisional pool in the scan's default order, then, when supplementary_scan_prefer_execution_fit is true, prioritizes names already within the existing entry_extension limit before applying supplementary_scan_max_candidates. This is research prioritization only and never overrides Phase B's fresh hard entry gate. Additive to watchlist_max_candidates, not shared with it -- the watchlist's own slots are never crowded out by scan results.",
 
     "min_avg_daily_volume": 1000000,
     "min_market_cap_usd": 2000000000,
@@ -41,6 +44,24 @@
 
   "cadence": {
     "news_search_budget_per_cycle": 30
+  },
+
+  "personalization": {
+    "_comment": "This is the only risk_rules section the investment committee may update automatically. It guides research emphasis and records learned preferences, but it never overrides any hard numeric limit, execution.mode, account fields, wash-sale settings, watchlist/scan identifiers, or the Phase A/Phase B specifications.",
+    "revision": 1,
+    "last_reviewed_central": "2026-08-25",
+    "research_focus": [
+      "For high-relative-volume candidates near earnings or major events, record signed return on a consistent session basis, event timing, and sector-relative move before attributing conviction."
+    ],
+    "preferred_setups": [],
+    "avoid_patterns": [],
+    "watchlist_notes": [],
+    "scan_notes": [
+      "Treat live last/bid/ask fields as potentially asynchronous; require synchronized timestamps before interpreting spreads or executable liquidity."
+    ],
+    "lessons_learned": [
+      "Preserve lookback-return direction and distinguish a negative multi-day return from a positive same-day rebound."
+    ]
   },
 
   "position_sizing": {

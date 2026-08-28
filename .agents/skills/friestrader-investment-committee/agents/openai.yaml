@@ -1,0 +1,4 @@
+interface:
+  display_name: "FriesTrader Investment Committee"
+  short_description: "Daily read-only review of trading strategy proposals"
+  default_prompt: "Use $friestrader-investment-committee to review today's FriesTrader operations and produce evidence-backed strategy proposals without applying changes."

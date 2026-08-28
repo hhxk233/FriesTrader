@@ -9,10 +9,11 @@ Performs **Steps 4–9**, consuming candidates from Phase A's
 
 Authorized to place real live orders under a narrow condition (see Step
 6's "Live-order gate" — Step 8 reuses the identical gate for buys).
-**That authorization must be given explicitly, in advance, by whoever
-operates this pipeline — after being warned that an unattended
-scheduled task has no human confirmation at the moment of execution.**
-Do not add, remove, or loosen any gate condition on your own judgment.
+This deployment has the operator's explicit advance authorization to run
+Robinhood MCP tool calls unattended, with no per-order interactive prompt.
+That approval only permits the calls to execute; it does not open the
+live-order gate. Do not add, remove, or loosen any gate condition on your own
+judgment.
 
 ## Step 0 — Load state (do this first, every run)
 
@@ -26,21 +27,31 @@ Do not add, remove, or loosen any gate condition on your own judgment.
    today's candidates). If missing or empty, log a `cycle_summary` noting
    nothing to process and stop — don't error.
 4. Read `trade_log.jsonl` (if present):
-   - **Idempotency — key off the proposal's own `date`, not today's.**
-     Skip a candidate if `trade_log.jsonl` already has a `risk_check`/
-     `order` entry for that symbol with a matching `proposal_date` (not
-     the entry's top-level `date`, which reflects when the decision was
-     made and changes daily even for a stale proposal). This matters
-     because if Phase A ever fails to run, an un-refreshed proposal would
-     otherwise look "new" every day and could be re-bought repeatedly;
-     keying off `proposal_date` means it's decided once. `stop_loss`/
-     `take_profit` are exempt — always run fresh.
-   - **Dry-run cycle count**: number of **distinct dates** with a
-     `cycle_summary` entry where `mode: dry_run` — not raw entry count
-     (same-day reruns count once). This represents validated days, not
-     executions, and must be
-     `>= execution.dry_run_min_cycles_before_live` before the
-     live-order gate (Step 6 for sells, Step 8 for buys) can open.
+   - **Idempotency — key off the proposal version, never today's date.**
+     When a candidate has `proposal_id`, skip it only if `trade_log.jsonl`
+     already has a `risk_check`/`order` entry for that symbol with the same
+     `proposal_id`. This lets a genuinely fresh same-day Phase A proposal be
+     evaluated while preventing a repeated Phase B call from acting twice on
+     the same version. For legacy candidates without `proposal_id`, retain the
+     prior fallback: match symbol plus the candidate's own `date` against
+     `proposal_date` (not the log entry's top-level `date`). This still prevents
+     an unrefreshed legacy proposal from looking new on later days.
+     `stop_loss`/`take_profit` are exempt — always run fresh.
+   - **Dry-run readiness**: do not hand-count it. Run:
+     `python3 scripts/dry_run_readiness.py --trade-log trade_log.jsonl
+     --min-dates <execution.dry_run_min_cycles_before_live>
+     --min-successful-reviews
+     <execution.dry_run_min_successful_reviews_before_live>`.
+     Use its JSON output directly. `dry_run_dates` counts distinct dates with
+     a `cycle_summary` whose `mode` is `dry_run` (same-day reruns count once).
+     `successful_dry_run_reviews` counts unique dry-run `order` entries whose
+     Robinhood preview explicitly logged `review_succeeded: true`; a passed
+     risk check, cancelled/failed preview, or duplicate proposal does not
+     count. Both minimums must be met before the live-order gate (Step 6 for
+     sells, Step 8 for buys) can open. If the helper fails, set
+     `ready_for_live = false`, record the error in this run's
+     `cycle_summary`, and continue the dry-run/risk workflow; never place a
+     live order using a guessed count.
 
 ## Step 4 — Classify candidates
 
@@ -218,13 +229,16 @@ check, further down) can see it.
 1. **Always** call `review_equity_order` first — a preview, never places
    anything.
 2. If it surfaces a blocking alert, do not proceed to placement
-   regardless of mode; log the alert verbatim and treat as rejected.
+   regardless of mode; log the alert verbatim with
+   `"review_succeeded": true, "would_execute": false` and treat as rejected.
 3. Otherwise, branch on `execution.mode` (fresh from Step 0) and the
-   dry-run cycle count:
+   dry-run readiness result:
 
    **Live-order gate — ALL must be true:**
    - `execution.mode == "live"`
-   - dry-run cycle count `>= execution.dry_run_min_cycles_before_live`
+   - `dry_run_dates >= execution.dry_run_min_cycles_before_live`
+   - `successful_dry_run_reviews >=
+     execution.dry_run_min_successful_reviews_before_live`
    - `review_equity_order` for this order returned no blocking alert
 
    - **Gate open**: call `place_equity_order` with the reviewed
@@ -237,7 +251,8 @@ check, further down) can see it.
      3. Otherwise wait ~15 seconds and check once more; use whatever
         `state` comes back, terminal or not — never poll more than
         twice or block the cycle waiting for a fill.
-     Log `"stage": "order", "mode": "live", "placed": true, "order_id":
+     Log `"stage": "order", "mode": "live", "review_succeeded": true,
+     "placed": true, "order_id":
      "<id>", "order_state": "<confirmed state from get_equity_orders>",
      "fill_price": <average_price if filled/partially_filled, else
      null>, "fill_quantity": <cumulative_quantity if filled/partially_filled,
@@ -245,16 +260,23 @@ check, further down) can see it.
      estimate already logged (not in place of it) — the log should show
      both the estimate and the confirmed real outcome.
    - `execution.mode == "dry_run"`: log
-     `"stage": "order", "mode": "dry_run", "would_execute": true"` and stop.
+     `"stage": "order", "mode": "dry_run", "would_execute": true,
+     "review_succeeded": true"` and stop.
      **Never call `place_equity_order` here.**
-   - `execution.mode == "live"` but cycle count still under threshold: do
+   - `execution.mode == "live"` but either historical readiness threshold is
+     still unmet: do
      **not** place. Log
-     `"stage": "order", "mode": "live_blocked_insufficient_cycles", "would_execute": true, "placed": false"`
-     with current vs. required count.
+     `"stage": "order", "mode": "live_blocked_insufficient_cycles",
+     "would_execute": true, "review_succeeded": true, "placed": false"`
+     with `dry_run_dates`, `dry_run_dates_required`,
+     `successful_dry_run_reviews`,
+     `successful_dry_run_reviews_required`, and `blocking_requirements`
+     copied from the Step 0 helper result.
 
 Never invent/guess a field value — if a tool call fails, log the
-failure and skip that candidate. Every `order` entry must carry
-`proposal_date` (Step 0's idempotency key).
+failure with `"review_succeeded": false` and skip that candidate. Every `order` entry must carry
+`proposal_date` and, when the candidate provides it, `proposal_id` (Step 0's
+idempotency key).
 
 **Wash-sale flag on sells (informational only, never blocks a sell):**
 whenever the stop-loss check triggers, a take-profit tier fires, a
@@ -532,8 +554,9 @@ For each candidate, log `"stage": "risk_check"` with that candidate's
 `results` entry fields verbatim.
 
 Every `risk_check` entry must include `proposal_date` (copied from the
-candidate's `"date"` in `pending_proposals.jsonl` — Step 0's idempotency
-key) and, for `direction: "long"`, `risk_flags` and `pct_below_52wk_high`
+candidate's `"date"` in `pending_proposals.jsonl`) and copy `proposal_id` when
+the candidate provides it (Step 0's preferred idempotency key). For
+`direction: "long"`, also include `risk_flags` and `pct_below_52wk_high`
 (for auditing the priority sort). Top-up entries must also include
 `"position_action": "top_up"`.
 
@@ -549,9 +572,9 @@ one difference: the pre-trade estimate logged alongside each order is
 `quote_bid` used for sells.
 
 Never change `execution.mode` yourself. Every `order` entry must carry
-`proposal_date` (same as Step 7's `risk_check` entries) — Step 0's
-idempotency check matches against either a `risk_check` or `order`
-entry.
+`proposal_date` and copy `proposal_id` when present (same as Step 7's
+`risk_check` entries) — Step 0's idempotency check matches against either a
+`risk_check` or `order` entry.
 
 ## Step 9 — Logging
 
@@ -565,17 +588,20 @@ evaluations), and `order` stages, matching the shape already in
 
 **Every line — including the final `cycle_summary` — needs a real
 `"timestamp"`** (`HH:mm:ss`, e.g. via `TZ='America/Chicago' date +'%H:%M:%S'`
-— never guessed), no date prefix. Separate from `"date"`/`"proposal_date"`
-— for readability only, never used for idempotency, dry-run count, or
-other logic; only `date` and `proposal_date` are mechanical.
+— never guessed), no date prefix. Separate from `"date"`, `"proposal_date"`,
+and `"proposal_id"`; the log timestamp is for readability and is never an
+idempotency or dry-run-count key.
 
 **Always append exactly one final line per run**, even if nothing else
 happened:
 ```json
-{"date": "YYYY-MM-DD", "timestamp": "HH:mm:ss", "stage": "cycle_summary", "mode": "dry_run|live", "candidates_considered": N, "orders_reviewed": N, "orders_placed": N}
+{"date": "YYYY-MM-DD", "timestamp": "HH:mm:ss", "stage": "cycle_summary", "mode": "dry_run|live", "candidates_considered": N, "orders_reviewed": N, "orders_placed": N, "dry_run_dates_before_cycle": N, "successful_dry_run_reviews_before_cycle": N, "live_readiness_met_before_cycle": false}
 ```
-Load-bearing — Step 0's dry-run cycle count depends on this line existing
-every run, keyed off `"date"` (distinct dates), not `"timestamp"`.
+Copy the three readiness values from Step 0's helper output; if that helper
+failed, set the counts to `null`, readiness to `false`, and add
+`"dry_run_readiness_error": "<exact error>"`. Load-bearing — Step 0's
+distinct-date count depends on this line existing every run, keyed off
+`"date"`, not `"timestamp"`.
 
 **After appending, regenerate `trade_log_recent.md`** (full overwrite,
 not append) — a short, plain-English recap of today's cycle for a quick

@@ -7,9 +7,9 @@ Automated subset of this pipeline (see `README.md`), run every weekday
 
 Performs **ONLY Steps 1–3**. **NEVER** Step 4 (re-verify), 5 (risk
 enforcement), 6 (dry run/order review), or 7 (`trade_log.jsonl`) — those
-belong to Phase B. Order tools (`review_equity_order`,
-`place_equity_order`, cancel) are hard-blocked at the connector level; do
-not attempt them anyway.
+belong to Phase B. Order tools may remain available in the shared Robinhood
+MCP connection, but availability is not authorization for Phase A: never call
+`review_equity_order`, `place_equity_order`, or either cancel tool here.
 
 ## Step 1 — Build the watchlist
 
@@ -19,6 +19,10 @@ hardcode the name). Call `get_watchlists` to find its `list_id` by
 matching `display_name`, then `get_watchlist_items` on that `list_id` —
 ignore all other watchlists.
 
+Pull `get_equity_positions` now as well. Held symbols are always included as
+described below, and this snapshot is also used to remove held symbols from
+the supplementary scan before applying its caps.
+
 **Supplementary market scan** (additive, not a replacement): call
 `run_scan` with `universe.supplementary_scan_id` — a saved Robinhood
 scanner (relative volume and market cap criteria, see
@@ -27,30 +31,57 @@ movers from outside your watchlist, so candidate selection isn't limited
 to names you've personally added. Drop any scan result that's already on
 the watchlist (it's already a watchlist candidate, not a second one) or
 already a held position (always included regardless, per below). From
-what's left, take up to `universe.supplementary_scan_max_candidates` —
-the scan's own default ordering, no re-ranking needed — and mark each
-`"source": "market_scan"` on its `screened` line (watchlist-sourced and
-held candidates get `"source": "watchlist"`). This cap is **separate
-from and additive to** `watchlist_max_candidates` below — scan results
-never compete with watchlist candidates for the same slots.
+what's left, take up to `universe.supplementary_scan_pool_max_candidates`
+in the scan's own default order as the **provisional scan pool**. This
+larger pool is only for cheap quote/fundamental/history qualification; it
+does not increase the final news-search or thesis workload.
 
-Dedupe the combined (watchlist + capped scan) list, filter via
-`get_equity_fundamentals` against `risk_rules.json`'s current `universe`
-block, and cap the **watchlist-sourced, non-held** portion at
-`universe.watchlist_max_candidates` — the scan's own separate cap above
-already bounds its own contribution, so this cap only ever applies to
-watchlist candidates.
+Dedupe watchlist, provisional scan, and held symbols. Pull
+`get_equity_fundamentals`, batched `get_equity_quotes`, and per-symbol
+`get_equity_historicals` for that union, fresh every run. Historical calls
+use `interval="day"` spanning the last ~300 calendar days — enough to cover
+`trend_filter_lookback_trading_days` plus weekends/holidays. Apply the current
+`universe` filters below before either non-held cap. Cap the
+**watchlist-sourced, non-held** survivors at
+`universe.watchlist_max_candidates`; held symbols never consume those slots.
 
-Pull current prices for the capped candidate list via `get_equity_quotes`
-(batched into one call), fresh every run. Use `last_trade_price` as
-`current_price` in Steps 2–3.
+When both `universe.supplementary_scan_prefer_execution_fit` and
+`entry_extension.enabled` are true, prioritize the passing provisional scan
+survivors before applying the final scan cap. Pipe a JSON array in the saved
+scan's original order, with each item shaped as
+`{"symbol": "XYZ", "current_price": 12.34, "daily_closes": [<oldest to newest>]}`,
+through:
 
-Pull price history per candidate via `get_equity_historicals`
-(`interval="day"`, spanning the last ~300 calendar days — enough to
-cover a `trend_filter_lookback_trading_days`-bar moving average plus
-buffer for weekends/holidays), fresh every run. This same series is
-reused in Step 2 for the 60-day price-move signal and in the trend-filter
-check just below — no second historicals call needed for either.
+`python3 scripts/rank_scan_candidates.py --lookback-days <entry_extension.lookback_trading_days> --max-extension-pct <entry_extension.max_extension_pct> --max-candidates <universe.supplementary_scan_max_candidates>`
+
+Use the script's `selected` symbols as the final scan contribution. It places
+names currently within the existing extension limit first, insufficient-
+history names second, and known-overextended names last, preserving the
+saved scan's relative-volume order inside each bucket. If either toggle is
+false, preserve the scan's original order and simply apply
+`supplementary_scan_max_candidates`. If the helper fails, stop without
+writing a partial handoff; do not hand-rank or loosen the limit.
+
+This ranking is **selection priority only**, not a risk exception. Phase B
+still recalculates `entry_extension` with a fresh ask and enforces the exact
+same hard threshold. Mark final scan candidates as `"source": "market_scan"`;
+watchlist and held candidates use `"source": "watchlist"`. The final scan cap
+remains separate from and additive to `watchlist_max_candidates`. A
+provisional scan name that fails a universe filter gets the normal rejected
+`screened` record; a passing name deferred solely because it fell outside the
+final scan cap is not a final candidate and is not logged as a rejection.
+
+Use each quote's `last_trade_price` as `current_price` in Steps 2–3 and
+preserve its symbol-level timestamp as `quote_as_of`. Build symbol-keyed maps
+from every response's own symbol identifiers; never associate batched
+quote/fundamental/history rows by array position. Before using any row needed
+for filtering, ranking, or a final candidate, verify its returned symbol
+matches. If it cannot be matched unambiguously, stop without writing or
+committing a partial `pending_proposals.jsonl` rather than borrowing another
+symbol's data.
+
+Reuse the same daily history in Step 2 for the 60-day price-move signal and
+for the trend filter below — no second historicals call is needed.
 
 `universe.max_market_cap_usd` is a ceiling, not just a floor — exclude if
 market cap exceeds it, regardless of how strong the candidate otherwise
@@ -113,7 +144,12 @@ search is mechanical, against `risk_rules.json`'s `signal_thresholds` —
 qualifies if it meets **any one** of these three (no extra tool calls
 needed):
 
-1. **60-day price move**: `abs(latest_close - close_60d_ago) / close_60d_ago >= signal_thresholds.price_move_60d_pct`.
+1. **60-day price move**: compute both
+   `signed_price_move_60d_pct = (latest_close - close_60d_ago) / close_60d_ago`
+   and `absolute_price_move_60d_pct = abs(signed_price_move_60d_pct)`;
+   qualify when the absolute value is at least
+   `signal_thresholds.price_move_60d_pct`. Preserve the sign in the
+   output even though the mechanical gate uses the absolute magnitude.
    **"60 days" = 60 *calendar* days, not trading bars.** Get
    `close_60d_ago` as the earliest bar's `close_price` when
    `get_equity_historicals`'s `start_time` = today minus 60 calendar days
@@ -269,6 +305,29 @@ Phase B (Step 7) as the secondary within-tier tie-break, after
 `risk_flags` — a disclosed "room in the setup" proxy, not a fair-value
 calc. Omit for `avoid`/`exit_existing`.
 
+**Include the price evidence as structured fields on every thesis:**
+`current_price` (the fresh quote's `last_trade_price`), `quote_symbol`
+(the symbol identifier returned with that quote), `quote_as_of` (the
+timezone-aware symbol-level quote timestamp), and `high_52_weeks` (from
+the same symbol's fundamentals row). `quote_symbol` must exactly equal
+the thesis `symbol`. These fields are the Phase A/Phase B handoff
+contract: Phase B passes `current_price` to `entry_gate.py` as
+`--thesis-price`. Do not infer a missing value from a signal string,
+another candidate, or a prior run.
+
+**Include a deterministic `proposal_id` on every thesis:**
+`<date>T<timestamp>|<symbol>` using that thesis record's exact Central
+`date`, `timestamp`, and uppercase `symbol` (for example,
+`2026-07-09T16:30:20|EXAMPLE`). A fresh Phase A run creates a fresh
+proposal version even on the same calendar day. Phase B uses this identifier
+for same-day idempotency; do not reuse an identifier from a prior run.
+
+For every earnings or per-share comparison, label each actual and estimate as
+`GAAP`, `adjusted/non-GAAP`, or `basis unavailable`. Never call a beat or miss
+by comparing an unlabeled broker estimate with an issuer-reported actual, or by
+mixing GAAP and adjusted figures. If the accounting bases cannot be matched,
+record the mismatch as unresolved evidence and reduce conviction accordingly.
+
 **Include a `sources` field** listing outlet name + URL for every search
 result that informed this thesis (e.g.
 `["Reuters: https://...", "Company Q2 press release: https://..."]`) —
@@ -287,26 +346,29 @@ should hold only today's candidates; history remains auditable via
 
 Every line needs a real `"timestamp"` (`HH:mm:ss`, e.g. via
 `TZ='America/Chicago' date +'%H:%M:%S'` — never guessed) alongside
-`"date"`. Time-of-day only, no date prefix. For human readability only —
-never used for idempotency or other logic.
+`"date"`. Time-of-day only, no date prefix. The raw timestamp remains for
+human readability; only the thesis's full `proposal_id` uses it mechanically.
 
 Write:
 - One `"stage": "screened"` line per candidate (`passed_filters`,
   `source` (`"watchlist"` or `"market_scan"`), `avg_volume`,
-  `market_cap`, `reason` if rejected — shape matches
+  `market_cap`, `current_price`, `quote_symbol`, `quote_as_of`,
+  `high_52_weeks`, `reason` if rejected — shape matches
   `trade_log_template.jsonl`), plus `"signal_check"` noting which Step 2
   threshold(s) triggered, **each ratio paired with its raw inputs**
   (examples below) so the arithmetic is checkable — raw numbers must be
   this run's actual pulled values, never back-computed to fit a
   percentage:
-  - `"price_move_60d: 0.2925 (close_60d_ago: 424.10 -> latest_close: 548.13)"`
+  - `"price_move_60d: signed -0.1833, absolute 0.1833 (close_60d_ago: 156.14 -> latest_close: 127.52)"`
   - `"volume_spike: 2.3x (latest_volume: 68000000 / avg_volume_30d: 29421634)"`
   - `"near_52wk_high: 0.02 (current_price: 314.86 / high_52_weeks: 321.00)"`
   - `"none"` if it didn't qualify for a thesis this run — no raw values
     needed in that case.
 - One `"stage": "thesis"` line per flagged candidate (shape matches
-  `trade_log_template.jsonl`), plus `pct_below_52wk_high` for `long`
-  candidates (Step 3).
+  `trade_log_template.jsonl`), including the structured price-evidence
+  fields and `proposal_id` above, plus `pct_below_52wk_high` for `long` candidates (Step
+  3). The screened and thesis records for a symbol must carry identical
+  `current_price`, `quote_symbol`, `quote_as_of`, and `high_52_weeks`.
 
 Do not touch `trade_log.jsonl` — reserved for Steps 4–9 (Phase B), which
 reads `pending_proposals.jsonl` separately.
@@ -333,6 +395,17 @@ appends each symbol's own thesis `conviction` as `"<symbol>
 carry a conviction too, it's just not decision-relevant there. No other
 reason/detail fields — a quick-glance list, not a substitute for the
 thesis lines.
+
+Before any `git add`, commit, push, or Phase B handoff, validate the
+completed file with:
+
+```powershell
+python -X utf8 scripts/validate_phase_a.py pending_proposals.jsonl
+```
+
+If validation fails, stop the run without staging, committing, pushing,
+or continuing to Phase B. Report the validation errors; do not weaken or
+bypass the validator and do not leave a partial handoff.
 
 ## Hard stop
 
