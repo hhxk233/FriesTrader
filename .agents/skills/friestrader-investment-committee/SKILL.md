@@ -9,6 +9,8 @@ Operate as the committee chair between the existing Phase A and Phase B workflow
 
 ## Boundaries
 
+The current process is already the committee chair launched by the caller. Run the session directly: never invoke `scripts/run_committee.ps1`, never launch another chair, and never delegate the complete committee workflow to a nested Codex process. This does not prohibit the supplied free-news helper from launching its isolated small-model workers.
+
 Keep `PHASE_A_TASK.md`, `PHASE_B_TASK.md`, their runtime prompts, and all existing order gates unchanged. The committee itself uses Robinhood read tools only and never reviews, places, cancels, or changes an order. It may write only:
 
 - the report and decision JSON paths supplied by the caller under `logs/`;

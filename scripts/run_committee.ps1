@@ -52,6 +52,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 
+$committeeActiveVariable = "FRIESTRADER_COMMITTEE_ACTIVE"
+if ([Environment]::GetEnvironmentVariable($committeeActiveVariable, "Process") -eq "1") {
+    throw "Refusing to start a nested FriesTrader committee. The current Codex process is already the committee chair."
+}
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 $promptPath = Join-Path $repoRoot "prompts\committee_review.md"
@@ -310,9 +315,11 @@ $gitConfigKeyName = "GIT_CONFIG_KEY_$gitConfigIndex"
 $gitConfigValueName = "GIT_CONFIG_VALUE_$gitConfigIndex"
 $previousGitConfigKey = [Environment]::GetEnvironmentVariable($gitConfigKeyName, "Process")
 $previousGitConfigValue = [Environment]::GetEnvironmentVariable($gitConfigValueName, "Process")
+$previousCommitteeActive = [Environment]::GetEnvironmentVariable($committeeActiveVariable, "Process")
 [Environment]::SetEnvironmentVariable($gitConfigKeyName, "safe.directory", "Process")
 [Environment]::SetEnvironmentVariable($gitConfigValueName, $repoRoot.Replace('\', '/'), "Process")
 [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", [string]($gitConfigIndex + 1), "Process")
+[Environment]::SetEnvironmentVariable($committeeActiveVariable, "1", "Process")
 
 $savedErrorActionPreference = $ErrorActionPreference
 try {
@@ -339,6 +346,7 @@ finally {
     [Environment]::SetEnvironmentVariable($gitConfigKeyName, $previousGitConfigKey, "Process")
     [Environment]::SetEnvironmentVariable($gitConfigValueName, $previousGitConfigValue, "Process")
     [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", $previousGitConfigCount, "Process")
+    [Environment]::SetEnvironmentVariable($committeeActiveVariable, $previousCommitteeActive, "Process")
 }
 
 if ($codexExitCode -ne 0) {

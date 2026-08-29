@@ -1,5 +1,7 @@
 Use the `$friestrader-investment-committee` Skill to run one complete FriesTrader committee session.
 
+You are already the committee chair process launched by `scripts\run_committee.ps1`. Execute the committee session directly in this process. Never invoke `scripts\run_committee.ps1`, never launch another committee chair, and never delegate the full committee session to a nested Codex process. The supplied free-news helper may launch its own isolated small-model workers; that is not a nested committee.
+
 Review date in America/Chicago: <central_date>
 Review mode: <review_mode>
 Committee report path: <committee_report_path>

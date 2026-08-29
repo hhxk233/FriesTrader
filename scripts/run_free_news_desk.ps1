@@ -392,6 +392,17 @@ if ($rolesNeedingFallback.Count -gt 0) {
         }
         New-Item -ItemType Directory -Path $fallbackRoot | Out-Null
         $schemaPath = Join-Path $fallbackRoot "news-analysis.schema.json"
+        $sourceCodexHome = if (-not [string]::IsNullOrWhiteSpace($env:CODEX_HOME)) {
+            [System.IO.Path]::GetFullPath($env:CODEX_HOME)
+        }
+        else {
+            Join-Path ([Environment]::GetFolderPath("UserProfile")) ".codex"
+        }
+        $sourceCodexAuthPath = Join-Path $sourceCodexHome "auth.json"
+        if ([string]::IsNullOrWhiteSpace($env:CODEX_API_KEY) -and
+            -not (Test-Path -LiteralPath $sourceCodexAuthPath -PathType Leaf)) {
+            throw "Codex CLI fallback authentication was unavailable. Run 'codex login' first."
+        }
         $fallbackSchema = [ordered]@{
             '$schema' = "https://json-schema.org/draft/2020-12/schema"
             type = "object"
@@ -416,6 +427,11 @@ if ($rolesNeedingFallback.Count -gt 0) {
             )
 
             $fallbackPrompt = "$systemPrompt`nROLE: $($Role.name)`nASSIGNMENT: $($Role.assignment)`nPUBLIC_PACKET_JSON:`n$packetCompact"
+            $roleCodexHome = Join-Path $fallbackRoot ("codex-home-" + [string]$Role.name)
+            New-Item -ItemType Directory -Path $roleCodexHome | Out-Null
+            if ([string]::IsNullOrWhiteSpace($env:CODEX_API_KEY)) {
+                Copy-Item -LiteralPath $sourceCodexAuthPath -Destination (Join-Path $roleCodexHome "auth.json")
+            }
             $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
             $startInfo.FileName = $resolvedCodexPath
             $startInfo.WorkingDirectory = $fallbackRoot
@@ -424,6 +440,7 @@ if ($rolesNeedingFallback.Count -gt 0) {
             $startInfo.RedirectStandardInput = $true
             $startInfo.RedirectStandardOutput = $true
             $startInfo.RedirectStandardError = $true
+            $startInfo.EnvironmentVariables["CODEX_HOME"] = $roleCodexHome
             foreach ($argument in @(
                 "-C", $fallbackRoot,
                 "-a", "never",
