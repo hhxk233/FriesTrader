@@ -90,7 +90,10 @@ if (-not (Test-Path -LiteralPath $privateConfigPath -PathType Leaf)) {
     throw "Private FriesTrader config not found: $privateConfigPath"
 }
 
-$codexCommand = Get-Command codex -ErrorAction SilentlyContinue
+$codexCommand = Get-Command codex.exe -ErrorAction SilentlyContinue
+if ($null -eq $codexCommand) {
+    $codexCommand = Get-Command codex -ErrorAction SilentlyContinue
+}
 if ($null -eq $codexCommand) {
     throw "Codex CLI was not found on PATH. Install it and run 'codex login' first."
 }
@@ -230,28 +233,36 @@ if (-not $env:CODEX_API_KEY) {
     $savedErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        & $codexCommand.Source login status *> $null
+        $loginOutput = @(& $codexCommandPath login status 2>&1)
         $loginExitCode = $LASTEXITCODE
     }
     finally {
         $ErrorActionPreference = $savedErrorActionPreference
     }
     if ($loginExitCode -ne 0) {
-        throw "Codex CLI is not authenticated. Run 'codex login' or provide CODEX_API_KEY for this process."
+        $loginDetails = (($loginOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine).Trim()
+        if ([string]::IsNullOrWhiteSpace($loginDetails)) {
+            $loginDetails = "No diagnostic output was returned."
+        }
+        throw "Codex CLI authentication check failed with exit code $loginExitCode using '$codexCommandPath':`n$loginDetails"
     }
 }
 
 $savedErrorActionPreference = $ErrorActionPreference
 try {
     $ErrorActionPreference = "Continue"
-    & $codexCommand.Source mcp get robinhood-trading --json *> $null
+    $mcpOutput = @(& $codexCommandPath mcp get robinhood-trading --json 2>&1)
     $mcpExitCode = $LASTEXITCODE
 }
 finally {
     $ErrorActionPreference = $savedErrorActionPreference
 }
 if ($mcpExitCode -ne 0) {
-    throw "Required MCP server 'robinhood-trading' is not configured."
+    $mcpDetails = (($mcpOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($mcpDetails)) {
+        $mcpDetails = "No diagnostic output was returned."
+    }
+    throw "Required MCP server 'robinhood-trading' check failed with exit code $mcpExitCode using '$codexCommandPath':`n$mcpDetails"
 }
 
 $prompt = Get-Content -Raw -Encoding UTF8 -LiteralPath $promptPath
@@ -366,7 +377,7 @@ $previousCommitteeActive = [Environment]::GetEnvironmentVariable($committeeActiv
 $savedErrorActionPreference = $ErrorActionPreference
 try {
     $ErrorActionPreference = "Continue"
-    $prompt | & $codexCommand.Source @codexArgs 2>&1 | ForEach-Object {
+    $prompt | & $codexCommandPath @codexArgs 2>&1 | ForEach-Object {
         $sanitizedLine = [string]$_
         foreach ($accountValue in $sensitiveAccountNumbers) {
             $maskedValue = if ($accountValue.Length -gt 4) {

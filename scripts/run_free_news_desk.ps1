@@ -428,7 +428,10 @@ if ($rolesNeedingFallback.Count -gt 0) {
         }
     }
     else {
-        $resolvedCodexCommand = Get-Command codex -ErrorAction SilentlyContinue
+        $resolvedCodexCommand = Get-Command codex.exe -ErrorAction SilentlyContinue
+        if ($null -eq $resolvedCodexCommand) {
+            $resolvedCodexCommand = Get-Command codex -ErrorAction SilentlyContinue
+        }
         if ($null -eq $resolvedCodexCommand) { "" } else { [string]$resolvedCodexCommand.Source }
     }
 
