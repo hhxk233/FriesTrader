@@ -27,7 +27,7 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._/-]*$')]
     [string]$FallbackModel = "gpt-5.6-luna",
 
-    [ValidateSet("minimal", "low", "medium")]
+    [ValidateSet("none", "low", "medium")]
     [string]$FallbackReasoningEffort = "low",
 
     [string]$CodexCommandPath,
@@ -85,7 +85,7 @@ if (-not (Test-ExactKeys -Object $packet -Keys $packetKeys)) {
 $topics = @($packet.topics)
 $symbols = @($packet.symbols)
 $publicItems = @($packet.public_items)
-if ($topics.Count -gt 20 -or $symbols.Count -gt 30 -or $publicItems.Count -eq 0 -or $publicItems.Count -gt 60) {
+if ($topics.Count -gt 20 -or $symbols.Count -gt 30 -or $publicItems.Count -gt 60) {
     throw "Free public-news packet exceeds topic, symbol, or item limits."
 }
 if (@($topics | Where-Object { -not ($_ -is [string]) -or $_.Length -gt 160 }).Count -gt 0 -or
@@ -137,6 +137,48 @@ if (Test-Path -LiteralPath $privateConfigPath -PathType Leaf) {
             throw "Free public-news packet contains a private account identifier."
         }
     }
+}
+
+if ($publicItems.Count -eq 0) {
+    $centralTimeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Central Standard Time")
+    $completedAt = [System.TimeZoneInfo]::ConvertTime([DateTimeOffset]::UtcNow, $centralTimeZone).ToString("yyyy-MM-ddTHH:mm:sszzz")
+    $resultRecord = [ordered]@{
+        status = "skipped"
+        reason = "no_public_items"
+        provider = "none"
+        endpoint = $Endpoint
+        requested_model = $Model
+        model = $null
+        external_model = $null
+        transport = "none"
+        completed_at_central = $completedAt
+        privacy = "public_only"
+        requested_agents = $AgentCount
+        successful_agents = 0
+        failed_agents = 0
+        external_successful_agents = 0
+        fallback = [ordered]@{
+            used = $false
+            model = $FallbackModel
+            reasoning_effort = $FallbackReasoningEffort
+            attempted_agents = 0
+            successful_agents = 0
+        }
+        results = @()
+        external_errors = @()
+        errors = @()
+    } | ConvertTo-Json -Depth 30
+    [System.IO.File]::WriteAllText($resolvedOutputPath, $resultRecord, (New-Object System.Text.UTF8Encoding($false)))
+
+    Write-Output "free_news_status=skipped"
+    Write-Output "free_news_reason=no_public_items"
+    Write-Output "free_news_provider=none"
+    Write-Output "free_news_model="
+    Write-Output "free_news_successful_agents=0"
+    Write-Output "free_news_fallback_used=false"
+    Write-Output "free_news_fallback_successful_agents=0"
+    Write-Output "free_news_result=$resolvedOutputPath"
+    exit 0
 }
 
 $roles = @(@(
@@ -360,7 +402,21 @@ if ($ProviderMode -eq "auto") {
 
 $completedRoles = @($results | ForEach-Object { [string]$_.role })
 $rolesNeedingFallback = @($roles | Where-Object { [string]$_.name -notin $completedRoles })
+$committeeDeferredAgents = 0
+$fallbackAttemptedAgents = 0
 $fallbackSuccessfulAgents = 0
+
+if ($rolesNeedingFallback.Count -gt 0 -and
+    [Environment]::GetEnvironmentVariable("FRIESTRADER_COMMITTEE_ACTIVE", "Process") -eq "1") {
+    $committeeDeferredAgents = $rolesNeedingFallback.Count
+    foreach ($role in $rolesNeedingFallback) {
+        $fallbackErrors.Add([ordered]@{
+            role = [string]$role.name
+            error = "Deferred to the in-session public_news_analyst fallback."
+        })
+    }
+    $rolesNeedingFallback = @()
+}
 
 if ($rolesNeedingFallback.Count -gt 0) {
     $resolvedCodexPath = if (-not [string]::IsNullOrWhiteSpace($CodexCommandPath)) {
@@ -391,17 +447,29 @@ if ($rolesNeedingFallback.Count -gt 0) {
             throw "Refusing to use an unsafe Codex fallback temporary path: $fallbackRoot"
         }
         New-Item -ItemType Directory -Path $fallbackRoot | Out-Null
+        try {
         $schemaPath = Join-Path $fallbackRoot "news-analysis.schema.json"
-        $sourceCodexHome = if (-not [string]::IsNullOrWhiteSpace($env:CODEX_HOME)) {
-            [System.IO.Path]::GetFullPath($env:CODEX_HOME)
-        }
-        else {
-            Join-Path ([Environment]::GetFolderPath("UserProfile")) ".codex"
-        }
-        $sourceCodexAuthPath = Join-Path $sourceCodexHome "auth.json"
-        if ([string]::IsNullOrWhiteSpace($env:CODEX_API_KEY) -and
-            -not (Test-Path -LiteralPath $sourceCodexAuthPath -PathType Leaf)) {
-            throw "Codex CLI fallback authentication was unavailable. Run 'codex login' first."
+        $sourceCodexAuthPath = $null
+        if ([string]::IsNullOrWhiteSpace($env:CODEX_API_KEY)) {
+            $authCandidates = @()
+            if (-not [string]::IsNullOrWhiteSpace($env:CODEX_HOME)) {
+                $authCandidates += Join-Path ([System.IO.Path]::GetFullPath($env:CODEX_HOME)) "auth.json"
+            }
+            $profileCandidates = @(
+                [string]$HOME,
+                [string]$env:USERPROFILE,
+                [Environment]::GetFolderPath("UserProfile")
+            ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique
+            foreach ($profilePath in $profileCandidates) {
+                $authCandidates += Join-Path $profilePath ".codex\auth.json"
+            }
+            $sourceCodexAuthPath = @($authCandidates | Sort-Object -Unique | Where-Object {
+                Test-Path -LiteralPath $_ -PathType Leaf
+            } | Select-Object -First 1)
+            if ($sourceCodexAuthPath.Count -ne 1) {
+                throw "Codex CLI fallback authentication was unavailable. Run 'codex login' first."
+            }
+            $sourceCodexAuthPath = [string]$sourceCodexAuthPath[0]
         }
         $fallbackSchema = [ordered]@{
             '$schema' = "https://json-schema.org/draft/2020-12/schema"
@@ -488,6 +556,7 @@ if ($rolesNeedingFallback.Count -gt 0) {
                     $roleOutput = Join-Path $fallbackRoot ("$($role.name).json")
                     try {
                         $pending += Start-CodexNewsAnalysis -Role $role -OutputFile $roleOutput
+                        $fallbackAttemptedAgents++
                     }
                     catch {
                         $fallbackErrors.Add([ordered]@{ role = [string]$role.name; error = $_.Exception.Message })
@@ -500,11 +569,19 @@ if ($rolesNeedingFallback.Count -gt 0) {
                             $entry.process.Kill()
                             throw "Codex fallback timed out"
                         }
-                        $null = $entry.stdout_task.GetAwaiter().GetResult()
+                        $stdoutText = $entry.stdout_task.GetAwaiter().GetResult()
                         $stderrText = $entry.stderr_task.GetAwaiter().GetResult()
                         if ($entry.process.ExitCode -ne 0) {
-                            $errorText = (($stderrText -replace '\s+', ' ').Trim())
-                            if ($errorText.Length -gt 800) { $errorText = $errorText.Substring(0, 800) }
+                            $diagnosticText = if (-not [string]::IsNullOrWhiteSpace($stderrText)) {
+                                $stderrText
+                            }
+                            else {
+                                $stdoutText
+                            }
+                            $errorText = (($diagnosticText -replace '\s+', ' ').Trim())
+                            if ($errorText.Length -gt 1200) {
+                                $errorText = $errorText.Substring($errorText.Length - 1200)
+                            }
                             throw "Codex fallback exit $($entry.process.ExitCode): $errorText"
                         }
                         if (-not (Test-Path -LiteralPath $entry.output_file -PathType Leaf)) {
@@ -530,6 +607,14 @@ if ($rolesNeedingFallback.Count -gt 0) {
                 Remove-Item -LiteralPath $fallbackRoot -Recurse -Force
             }
         }
+        }
+        finally {
+            if ($fallbackRoot.StartsWith($tempRoot, [System.StringComparison]::OrdinalIgnoreCase) -and
+                ([System.IO.Path]::GetFileName($fallbackRoot)).StartsWith("friestrader-news-", [System.StringComparison]::Ordinal) -and
+                (Test-Path -LiteralPath $fallbackRoot -PathType Container)) {
+                Remove-Item -LiteralPath $fallbackRoot -Recurse -Force
+            }
+        }
     }
 }
 
@@ -541,6 +626,9 @@ $provider = if ($externalSuccessfulAgents -gt 0 -and $fallbackSuccessfulAgents -
 }
 elseif ($fallbackSuccessfulAgents -gt 0) {
     "codex_fallback"
+}
+elseif ($results.Count -eq 0) {
+    "none"
 }
 else {
     "free_empero"
@@ -563,7 +651,24 @@ $resultRecord = [ordered]@{
     requested_model = $Model
     model = $effectiveModel
     external_model = $resolvedModel
-    transport = if ($provider -eq "codex_fallback") { "Codex CLI" } elseif ($provider -eq "mixed") { "curl.exe + Codex CLI" } elseif ($curlCommandPath -eq $openSslCurlPath) { "curl.exe (OpenSSL)" } else { "curl.exe (Schannel)" }
+    transport = if ($provider -eq "codex_fallback") {
+        "Codex CLI"
+    }
+    elseif ($provider -eq "mixed" -or ($externalErrors.Count -gt 0 -and $fallbackAttemptedAgents -gt 0)) {
+        "curl.exe + Codex CLI"
+    }
+    elseif ($fallbackAttemptedAgents -gt 0) {
+        "Codex CLI"
+    }
+    elseif ([string]::IsNullOrWhiteSpace($curlCommandPath)) {
+        "none"
+    }
+    elseif ($curlCommandPath -eq $openSslCurlPath) {
+        "curl.exe (OpenSSL)"
+    }
+    else {
+        "curl.exe (Schannel)"
+    }
     completed_at_central = $completedAt
     privacy = "public_only"
     requested_agents = $roles.Count
@@ -571,11 +676,12 @@ $resultRecord = [ordered]@{
     failed_agents = $errors.Count
     external_successful_agents = $externalSuccessfulAgents
     fallback = [ordered]@{
-        used = $fallbackSuccessfulAgents -gt 0
+        used = $fallbackAttemptedAgents -gt 0 -or $committeeDeferredAgents -gt 0
         model = $FallbackModel
         reasoning_effort = $FallbackReasoningEffort
-        attempted_agents = $rolesNeedingFallback.Count
+        attempted_agents = $fallbackAttemptedAgents
         successful_agents = $fallbackSuccessfulAgents
+        deferred_to_committee = $committeeDeferredAgents
     }
     results = @($results | ForEach-Object { $_ })
     external_errors = @($externalErrors | ForEach-Object { $_ })
@@ -587,9 +693,10 @@ Write-Output "free_news_status=$status"
 Write-Output "free_news_provider=$provider"
 Write-Output "free_news_model=$effectiveModel"
 Write-Output ("free_news_successful_agents=" + $results.Count)
-Write-Output ("free_news_fallback_used=" + ($fallbackSuccessfulAgents -gt 0).ToString().ToLowerInvariant())
+Write-Output ("free_news_fallback_used=" + ($fallbackAttemptedAgents -gt 0 -or $committeeDeferredAgents -gt 0).ToString().ToLowerInvariant())
 Write-Output ("free_news_fallback_successful_agents=" + $fallbackSuccessfulAgents)
+Write-Output ("free_news_committee_fallback_agents=" + $committeeDeferredAgents)
 Write-Output "free_news_result=$resolvedOutputPath"
 if ($status -eq "failed") {
-    throw "All free public-news desk agents failed."
+    Write-Output "free_news_degraded=true"
 }

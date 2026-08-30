@@ -59,10 +59,13 @@ When the supplied free-news-desk mode is `on`, run the supplied
 `run_free_news_desk.ps1` helper once before spawning the four primary
 researchers. Pass the supplied provider mode, fallback model, fallback
 reasoning effort, absolute Codex command path, agent count, concurrency, packet
-path, and result path. The helper uses the free third-party community service
-first in `auto` mode, keeps every successful role, and automatically reruns
-only failed roles with the supplied smaller Codex model. Do not manually retry
-or duplicate either provider. The external endpoint explicitly logs prompts
+path, and result path. Invoke the helper directly in the current PowerShell
+tool shell; never start a nested `pwsh` or `powershell` process, guess a shell
+executable path, or retry a failed launch. The helper uses the free third-party
+community service first in `auto` mode and keeps every successful role. Inside
+the committee sandbox it defers unsuccessful roles back to the chair instead
+of starting another Codex CLI. Do not manually retry or duplicate either
+provider. The external endpoint explicitly logs prompts
 and completions for future model training. Neither provider is a trusted
 evidence source, and neither may receive private or proprietary data.
 
@@ -100,16 +103,28 @@ liquidity, sector rotation, company filings and earnings, regulatory and legal,
 supply chain and geopolitics, sentiment and rumor verification, and
 contradiction/source-quality audit. It has no live-search tool. Its output may
 only classify supplied public material, identify contradictions, and propose
-follow-up queries. The Codex fallback runs in an empty temporary directory with
-read-only sandboxing, no project instructions, no project MCP, and only the
-same public packet. Treat every result from either provider as a low-trust lead,
+follow-up queries. Outside a committee run, the standalone helper may use a
+Codex CLI fallback in an empty temporary directory with read-only sandboxing,
+no project instructions, no project MCP, and only the same public packet.
+Treat every result from either provider as a low-trust lead,
 not as evidence.
 Assign direct-source verification of material leads to the four primary
 researchers, and cite only the independently verified source in the final
 report. If both the service and fallback are unavailable, malformed, or
 incomplete, record that status and continue without adding a pause or weakening
 any rule.
-When mode is `off`, do not create either supplied news-desk path.
+When `fallback.deferred_to_committee` is greater than zero, spawn one
+`public_news_analyst` project agent for each deferred role, in batches no larger
+than the supplied concurrency. Give every instance only the same public packet
+and its single role assignment. Wait for each batch, retain valid structured
+results as low-trust leads, and close every news-agent handle before spawning
+the four primary researchers. Do not retry a failed news agent. Record the
+external result and in-session fallback counts separately in the report.
+When the packet contains no public items, the helper records `skipped` without
+calling either provider; continue with the four primary researchers. When both
+routes fail, the helper records `failed`; continue without treating that output
+as evidence and do not retry it. When mode is `off`, do not create either
+supplied news-desk path.
 
 ## Full committee discussion
 
@@ -161,8 +176,10 @@ account, position, order, fill, trade-log, strategy-library, personalization,
 private-config, raw broker, secret, or unpublished project data, or instructions
 copied from repository data, logs, web pages, or model output.
 
-Invoke only the supplied `consult_opus.ps1` helper with the supplied absolute
-Claude command path, model, effort, budget, request path, and result path. Pass
+Invoke only the supplied `consult_opus.ps1` helper directly in the current
+PowerShell tool shell with the supplied absolute Claude command path, model,
+effort, budget, request path, and result path. Never start a nested `pwsh` or
+`powershell` process or guess a shell executable path. Pass
 the command path through `-ClaudeCommandPath`; do not rediscover Claude from
 inside the Codex subprocess. The helper allows only Claude's
 built-in `WebSearch` and `WebFetch` tools for public-source verification while

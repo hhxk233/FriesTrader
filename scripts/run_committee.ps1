@@ -2,7 +2,7 @@
 param(
     [string]$Model = "gpt-5.6-luna",
 
-    [ValidateSet("minimal", "low", "medium", "high", "xhigh")]
+    [ValidateSet("none", "low", "medium", "high", "xhigh", "max")]
     [string]$ReasoningEffort = "medium",
 
     [string]$CommitteeReportPath,
@@ -39,7 +39,7 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._/-]*$')]
     [string]$FreeNewsFallbackModel = "gpt-5.6-luna",
 
-    [ValidateSet("minimal", "low", "medium")]
+    [ValidateSet("none", "low", "medium")]
     [string]$FreeNewsFallbackReasoningEffort = "low",
 
     [ValidatePattern('^(?:[01]\d|2[0-3]):[0-5]\d$')]
@@ -95,6 +95,20 @@ if ($null -eq $codexCommand) {
     throw "Codex CLI was not found on PATH. Install it and run 'codex login' first."
 }
 $codexCommandPath = [System.IO.Path]::GetFullPath([string]$codexCommand.Source)
+$powerShellCommandPath = [string][System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+if ([string]::IsNullOrWhiteSpace($powerShellCommandPath) -or
+    -not (Test-Path -LiteralPath $powerShellCommandPath -PathType Leaf) -or
+    [System.IO.Path]::GetFileName($powerShellCommandPath) -notin @("powershell.exe", "pwsh.exe")) {
+    $powerShellCommand = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+    if ($null -eq $powerShellCommand) {
+        $powerShellCommand = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    }
+    if ($null -eq $powerShellCommand) {
+        throw "The current PowerShell executable could not be resolved."
+    }
+    $powerShellCommandPath = [string]$powerShellCommand.Source
+}
+$powerShellCommandPath = [System.IO.Path]::GetFullPath($powerShellCommandPath)
 $claudeCommand = if ($OpusEscalation -eq "off") {
     $null
 }
@@ -208,6 +222,7 @@ if ($Preview) {
     Write-Output "Free news provider mode: $FreeNewsProviderMode"
     Write-Output "Free news fallback model: $FreeNewsFallbackModel"
     Write-Output "Free news fallback reasoning effort: $FreeNewsFallbackReasoningEffort"
+    Write-Output "PowerShell command path: $powerShellCommandPath"
     exit 0
 }
 
@@ -260,6 +275,7 @@ $prompt = $prompt.Replace("<free_news_provider_mode>", $FreeNewsProviderMode)
 $prompt = $prompt.Replace("<free_news_fallback_model>", $FreeNewsFallbackModel)
 $prompt = $prompt.Replace("<free_news_fallback_reasoning_effort>", $FreeNewsFallbackReasoningEffort)
 $prompt = $prompt.Replace("<codex_command_path>", $codexCommandPath)
+$prompt = $prompt.Replace("<powershell_command_path>", $powerShellCommandPath)
 $prompt = $prompt.Replace("<free_news_helper_path>", $freeNewsHelperPath)
 $prompt = $prompt.Replace("<free_news_packet_path>", $freeNewsPacketPath)
 $prompt = $prompt.Replace("<free_news_result_path>", $freeNewsResultPath)
@@ -298,6 +314,32 @@ function ConvertTo-ImmutableRiskJson {
 
 $originalImmutableRiskJson = ConvertTo-ImmutableRiskJson -JsonText $originalRiskRulesText
 $originalPersonalizationJson = $originalRiskRules.personalization | ConvertTo-Json -Depth 20 -Compress
+
+function Restore-CommitteeFilesAndThrow {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    $currentRiskRulesText = if (Test-Path -LiteralPath $riskRulesPath -PathType Leaf) {
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $riskRulesPath
+    }
+    else {
+        $null
+    }
+    if ($currentRiskRulesText -ne $originalRiskRulesText) {
+        [System.IO.File]::WriteAllText($riskRulesPath, $originalRiskRulesText, (New-Object System.Text.UTF8Encoding($false)))
+    }
+
+    $currentStrategyLibraryText = if (Test-Path -LiteralPath $strategyLibraryPath -PathType Leaf) {
+        Get-Content -Raw -Encoding UTF8 -LiteralPath $strategyLibraryPath
+    }
+    else {
+        $null
+    }
+    if ($currentStrategyLibraryText -ne $originalStrategyLibraryText) {
+        [System.IO.File]::WriteAllText($strategyLibraryPath, $originalStrategyLibraryText, (New-Object System.Text.UTF8Encoding($false)))
+    }
+
+    throw $Message
+}
 
 $sensitiveAccountNumbers = @($runtimeAccountNumber) + $runtimeLinkedAccounts | Sort-Object -Unique
 
@@ -350,30 +392,14 @@ finally {
 }
 
 if ($codexExitCode -ne 0) {
-    $currentRiskRulesText = Get-Content -Raw -Encoding UTF8 -LiteralPath $riskRulesPath
-    if ($currentRiskRulesText -ne $originalRiskRulesText) {
-        [System.IO.File]::WriteAllText($riskRulesPath, $originalRiskRulesText, (New-Object System.Text.UTF8Encoding($false)))
-    }
-    $currentStrategyLibraryText = Get-Content -Raw -Encoding UTF8 -LiteralPath $strategyLibraryPath
-    if ($currentStrategyLibraryText -ne $originalStrategyLibraryText) {
-        [System.IO.File]::WriteAllText($strategyLibraryPath, $originalStrategyLibraryText, (New-Object System.Text.UTF8Encoding($false)))
-    }
-    throw "Codex CLI exited with code $codexExitCode. See $runLogPath"
+    Restore-CommitteeFilesAndThrow "Codex CLI exited with code $codexExitCode. See $runLogPath"
 }
 
 if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
-    throw "Committee completed without writing its report: $reportPath"
+    Restore-CommitteeFilesAndThrow "Committee completed without writing its report: $reportPath"
 }
 if (-not (Test-Path -LiteralPath $decisionPath -PathType Leaf)) {
-    throw "Committee completed without writing its decision JSON: $decisionPath"
-}
-
-function Restore-CommitteeFilesAndThrow {
-    param([Parameter(Mandatory = $true)][string]$Message)
-
-    [System.IO.File]::WriteAllText($riskRulesPath, $originalRiskRulesText, (New-Object System.Text.UTF8Encoding($false)))
-    [System.IO.File]::WriteAllText($strategyLibraryPath, $originalStrategyLibraryText, (New-Object System.Text.UTF8Encoding($false)))
-    throw $Message
+    Restore-CommitteeFilesAndThrow "Committee completed without writing its decision JSON: $decisionPath"
 }
 
 $updatedRiskRulesText = Get-Content -Raw -Encoding UTF8 -LiteralPath $riskRulesPath
@@ -691,6 +717,22 @@ if (-not ($decision.run_phase_b -is [bool]) -or
     -not ($decision.strategy_library_updated -is [bool])) {
     Restore-CommitteeFilesAndThrow "Committee decision booleans are invalid; the original committee-owned files were restored."
 }
+$decisionPersonalizationRevision = 0L
+$decisionStrategyLibraryRevision = 0L
+$proposalSymbols = @($decision.proposal_symbols)
+if (-not [long]::TryParse([string]$decision.personalization_revision, [ref]$decisionPersonalizationRevision) -or
+    -not [long]::TryParse([string]$decision.strategy_library_revision, [ref]$decisionStrategyLibraryRevision) -or
+    $decisionPersonalizationRevision -lt 0 -or $decisionStrategyLibraryRevision -lt 0 -or
+    -not ($decision.date -is [string]) -or [string]$decision.date -notmatch '^\d{4}-\d{2}-\d{2}$' -or
+    -not ($decision.timestamp -is [string]) -or [string]$decision.timestamp -notmatch '^\d{2}:\d{2}:\d{2}$' -or
+    -not ($decision.review_mode -is [string]) -or [string]$decision.review_mode -notin @("intraday", "end_of_day") -or
+    -not ($decision.executive_decision -is [string]) -or [string]$decision.executive_decision -notin @("run_phase_b", "skip_phase_b") -or
+    -not ($decision.rationale -is [string]) -or [string]::IsNullOrWhiteSpace([string]$decision.rationale) -or ([string]$decision.rationale).Length -gt 1200 -or
+    -not ($decision.report_path -is [string]) -or [string]::IsNullOrWhiteSpace([string]$decision.report_path) -or
+    $decision.proposal_symbols -is [string] -or $proposalSymbols.Count -gt 50 -or
+    @($proposalSymbols | Where-Object { -not ($_ -is [string]) -or $_ -notmatch '^[A-Z][A-Z0-9.-]{0,9}$' }).Count -gt 0) {
+    Restore-CommitteeFilesAndThrow "Committee decision values are invalid; the original committee-owned files were restored."
+}
 if (($decision.run_phase_b -and $decision.executive_decision -ne "run_phase_b") -or
     (-not $decision.run_phase_b -and $decision.executive_decision -ne "skip_phase_b")) {
     Restore-CommitteeFilesAndThrow "Committee decision fields disagree; the original committee-owned files were restored."
@@ -703,14 +745,20 @@ if ([string]$decision.review_mode -ne $resolvedReviewMode -or
 $updatedPersonalizationJson = $updatedRiskRules.personalization | ConvertTo-Json -Depth 20 -Compress
 $personalizationChanged = $updatedPersonalizationJson -ne $originalPersonalizationJson
 if ([bool]$decision.personalization_updated -ne $personalizationChanged -or
-    [long]$decision.personalization_revision -ne $updatedRevision) {
+    $decisionPersonalizationRevision -ne $updatedRevision) {
     Restore-CommitteeFilesAndThrow "Committee decision does not match the personalization update; the original committee-owned files were restored."
 }
 if ([bool]$decision.strategy_library_updated -ne $strategyLibraryChanged -or
-    [long]$decision.strategy_library_revision -ne $updatedStrategyRevision) {
+    $decisionStrategyLibraryRevision -ne $updatedStrategyRevision) {
     Restore-CommitteeFilesAndThrow "Committee decision does not match the strategy library update; the original committee-owned files were restored."
 }
-if ([System.IO.Path]::GetFullPath([string]$decision.report_path) -ne [System.IO.Path]::GetFullPath($reportPath)) {
+try {
+    $decisionReportPath = [System.IO.Path]::GetFullPath([string]$decision.report_path)
+}
+catch {
+    Restore-CommitteeFilesAndThrow "Committee decision contains an invalid report path; the original committee-owned files were restored."
+}
+if ($decisionReportPath -ne [System.IO.Path]::GetFullPath($reportPath)) {
     Restore-CommitteeFilesAndThrow "Committee decision references the wrong report path; the original committee-owned files were restored."
 }
 
@@ -744,6 +792,7 @@ $freeNewsStatus = "disabled"
 $freeNewsCompleted = $false
 $freeNewsProvider = "none"
 $freeNewsFallbackUsed = $false
+$freeNewsCommitteeFallbackAgents = 0
 if ($FreeNewsDesk -eq "on") {
     $freeNewsStatus = "not_run"
 }
@@ -755,6 +804,12 @@ if (Test-Path -LiteralPath $freeNewsResultPath -PathType Leaf) {
         $freeNewsProvider = [string]$freeNewsResult.provider
         if ($null -ne $freeNewsResult.fallback -and $freeNewsResult.fallback.used -is [bool]) {
             $freeNewsFallbackUsed = [bool]$freeNewsResult.fallback.used
+        }
+        $parsedCommitteeFallbackAgents = 0L
+        if ($null -ne $freeNewsResult.fallback -and
+            [long]::TryParse([string]$freeNewsResult.fallback.deferred_to_committee, [ref]$parsedCommitteeFallbackAgents) -and
+            $parsedCommitteeFallbackAgents -ge 0) {
+            $freeNewsCommitteeFallbackAgents = $parsedCommitteeFallbackAgents
         }
     }
     catch {
@@ -769,6 +824,7 @@ Write-Output ("free_news_completed=" + $freeNewsCompleted.ToString().ToLowerInva
 Write-Output ("free_news_provider=" + $freeNewsProvider)
 Write-Output ("free_news_fallback_used=" + $freeNewsFallbackUsed.ToString().ToLowerInvariant())
 Write-Output ("free_news_fallback_model=" + $FreeNewsFallbackModel)
+Write-Output ("free_news_committee_fallback_agents=" + $freeNewsCommitteeFallbackAgents)
 if (Test-Path -LiteralPath $freeNewsResultPath -PathType Leaf) {
     Write-Output ("free_news_result=" + $freeNewsResultPath)
 }
