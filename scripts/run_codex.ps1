@@ -182,6 +182,14 @@ if ($initialStagedFiles.Count -gt 0) {
     throw "The Git staging area must be empty before a FriesTrader run. Staged files: $($initialStagedFiles -join ', ')"
 }
 
+$phaseAOutputPath = Join-Path $repoRoot "pending_proposals.jsonl"
+$phaseAOutputHashBefore = if ($Phase -eq "A" -and (Test-Path -LiteralPath $phaseAOutputPath -PathType Leaf)) {
+    (Get-FileHash -Algorithm SHA256 -LiteralPath $phaseAOutputPath).Hash
+}
+else {
+    $null
+}
+
 $logsPath = Join-Path $repoRoot "logs"
 New-Item -ItemType Directory -Force -Path $logsPath | Out-Null
 
@@ -205,7 +213,7 @@ $runtimeOverrides
 $prompt += @"
 
 WINDOWS RUNTIME NOTE
-For every Bash command required by the task, use C:\msys64\usr\bin\bash.exe. This is the installed Bash executable that honors TZ=America/Chicago in this environment. Do not use WSL bash or Git for Windows bash for those time commands.
+Use C:\msys64\usr\bin\bash.exe only for the task's required Bash time commands. This is the installed Bash executable that honors TZ=America/Chicago in this environment; do not use WSL bash or Git for Windows bash for those commands. Run every repository Python helper from PowerShell with the installed native `python` command, preserving the task's arguments and stdin exactly; do not run those helpers inside MSYS2, even where the task documents the portable command name `python3`.
 "@
 $prompt += @"
 
@@ -222,11 +230,15 @@ Write-Host "Combined run log: $logPath"
 
 $previousGitConfigCount = [Environment]::GetEnvironmentVariable("GIT_CONFIG_COUNT", "Process")
 $previousPath = [Environment]::GetEnvironmentVariable("PATH", "Process")
+$previousChereInvoking = [Environment]::GetEnvironmentVariable("CHERE_INVOKING", "Process")
 $msysBashDirectory = "C:\msys64\usr\bin"
 if (-not (Test-Path -LiteralPath (Join-Path $msysBashDirectory "bash.exe") -PathType Leaf)) {
     throw "Required Bash executable not found: $msysBashDirectory\bash.exe"
 }
 [Environment]::SetEnvironmentVariable("PATH", "$msysBashDirectory;$previousPath", "Process")
+# MSYS2 login shells otherwise change to HOME, so relative repository paths
+# (including the required Phase A ranking helper input) become unresolvable.
+[Environment]::SetEnvironmentVariable("CHERE_INVOKING", "1", "Process")
 $gitConfigIndex = if ([string]::IsNullOrWhiteSpace($previousGitConfigCount)) { 0 } else { [int]$previousGitConfigCount }
 $gitConfigKeyName = "GIT_CONFIG_KEY_$gitConfigIndex"
 $gitConfigValueName = "GIT_CONFIG_VALUE_$gitConfigIndex"
@@ -259,6 +271,7 @@ try {
 finally {
     $ErrorActionPreference = $savedErrorActionPreference
     [Environment]::SetEnvironmentVariable("PATH", $previousPath, "Process")
+    [Environment]::SetEnvironmentVariable("CHERE_INVOKING", $previousChereInvoking, "Process")
     [Environment]::SetEnvironmentVariable($gitConfigKeyName, $previousGitConfigKey, "Process")
     [Environment]::SetEnvironmentVariable($gitConfigValueName, $previousGitConfigValue, "Process")
     [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", $previousGitConfigCount, "Process")
@@ -280,6 +293,13 @@ foreach ($requiredOutputFileName in $outputFileNames) {
     $requiredOutputPath = Join-Path $repoRoot $requiredOutputFileName
     if (-not (Test-Path -LiteralPath $requiredOutputPath -PathType Leaf)) {
         throw "Codex completed without producing the required output file: $requiredOutputPath"
+    }
+}
+
+if ($Phase -eq "A") {
+    $phaseAOutputHashAfter = (Get-FileHash -Algorithm SHA256 -LiteralPath $phaseAOutputPath).Hash
+    if ($null -ne $phaseAOutputHashBefore -and $phaseAOutputHashAfter -eq $phaseAOutputHashBefore) {
+        throw "Codex completed without producing a fresh pending_proposals.jsonl. Refusing to validate, push stale output, or continue. See $logPath"
     }
 }
 
