@@ -6,6 +6,6 @@
 
 ## Candidates
 
-- AVY (new entry, high conviction): rejected because the $276.83 ask was 58.8968% above the $174.22 thesis-time price and 54.7336% above the 20-day average, exceeding both hard entry limits.
-- ATI (new entry, low conviction): rejected because the $233.38 ask was 14.2675% above the $204.24 thesis-time price, exceeding the 3% entry-gap limit.
-- ROIV (new entry, high conviction): approved and sized at $40.01; the mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- AVY (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- ROIV (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- ATI (new entry, low conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; the 1.8410% positive gap was rechecked against the thesis and remained consistent with the documented August 31 MSCI index implementation rather than a thesis invalidation. It was approved and sized at $12.00. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
