@@ -1,4 +1,4 @@
-# 2026-09-02
+# 2026-09-03
 
 ## Loss-limit check
 
@@ -6,5 +6,7 @@
 
 ## Candidates
 
-- HESM (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
-- SSL (new entry, medium conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $24.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- NTSK (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- VSXY (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- NTAP (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- ATAI (new entry, medium conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $24.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
