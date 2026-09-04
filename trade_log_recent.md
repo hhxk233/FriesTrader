@@ -1,4 +1,4 @@
-# 2026-09-03
+# 2026-09-04
 
 ## Loss-limit check
 
@@ -9,4 +9,4 @@
 - NTSK (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
 - ZS (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
 - VSXY (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
-- IOT (new entry, high conviction): rejected because its $44.80 ask was 15.598% above the $38.755 thesis price and 12.6633% above its $39.7645 20-day average, breaching both hard buy ceilings.
+- IOT (new entry, high conviction): rejected because its $42.11 ask was 8.6569% above the $38.755 thesis price, breaching the 3% entry-price-gap ceiling.
