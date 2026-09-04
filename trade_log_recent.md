@@ -6,5 +6,5 @@
 
 ## Candidates
 
-- DOCU (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
-- IOT (new entry, high conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $40.01. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- DOCU (new entry, low conviction): rejected because its $68.50 ask was 10.2891% above the 20-day average of $62.1095, exceeding the 10% entry-extension ceiling.
+- IOT (new entry, low conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $12.00. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
