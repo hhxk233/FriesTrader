@@ -1,4 +1,4 @@
-# 2026-09-04
+# 2026-09-05
 
 ## Loss-limit check
 
@@ -6,5 +6,5 @@
 
 ## Candidates
 
-- DOCU (new entry, low conviction): rejected because its $68.50 ask was 10.2891% above the 20-day average of $62.1095, exceeding the 10% entry-extension ceiling.
-- IOT (new entry, low conviction): passed the price-gap, 20-day extension, wash-sale, and re-entry checks; approved and sized at $12.00. The mandatory Robinhood preview succeeded with no alerts, so it would execute in dry-run mode only.
+- IOT (new entry, high conviction): rejected because its $44.11 ask was 9.7127% above the $40.205 thesis-time price and 10.949% above the 20-day average of $39.757, exceeding both entry ceilings.
+- DOCU (new entry, low conviction): rejected because its $69.00 ask was 10.37% above the 20-day average of $62.517, exceeding the 10% entry-extension ceiling.
