@@ -1,0 +1,13 @@
+{
+  "description": "FriesTrader timestamp evidence and per-order session checks; no order tool is removed.",
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "^mcp__robinhood[-_]trading__(review_equity_order|place_equity_order)$",
+      "hooks": [{"type": "command", "command": "python -X utf8 scripts/tool_evidence_hook.py", "timeout": 20}]
+    }],
+    "PostToolUse": [{
+      "matcher": "^mcp__robinhood[-_]trading__(get_equity_quotes|get_portfolio|review_equity_order)$",
+      "hooks": [{"type": "command", "command": "python -X utf8 scripts/tool_evidence_hook.py", "timeout": 20}]
+    }]
+  }
+}

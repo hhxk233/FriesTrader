@@ -118,6 +118,10 @@ if ($null -eq $codexCommand) {
     throw "Codex CLI was not found on PATH. Install it and run 'codex login' first."
 }
 $codexCommandPath = [System.IO.Path]::GetFullPath([string]$codexCommand.Source)
+if (-not $Preview) {
+    & python -X utf8 (Join-Path $scriptRoot "codex_hooks_check.py") --codex $codexCommandPath
+    if ($LASTEXITCODE -ne 0) { throw "Required execution-evidence hooks are not available; no committee started." }
+}
 $powerShellCommandPath = [string][System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
 if ([string]::IsNullOrWhiteSpace($powerShellCommandPath) -or
     -not (Test-Path -LiteralPath $powerShellCommandPath -PathType Leaf) -or
@@ -216,6 +220,8 @@ $codexArgs = @(
     "-s", "workspace-write",
     "-c", "sandbox_workspace_write.network_access=true",
     "-c", "mcp_servers.robinhood-trading.required=true",
+    "-c", "features.hooks=true",
+    "--dangerously-bypass-hook-trust",
     "-c", "model_reasoning_effort=$ReasoningEffort",
     "--search"
 )

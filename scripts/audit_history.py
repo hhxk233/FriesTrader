@@ -1,5 +1,6 @@
 """Reproducible local evidence counts, never inferred fills or investment returns."""
 import argparse
+from contextlib import closing
 from collections import Counter
 import datetime as dt
 import json
@@ -7,6 +8,10 @@ from pathlib import Path
 
 from dry_run_readiness import compute_readiness, load_records, review_key
 from market_session import CENTRAL, now_central, session_at
+from paper_ledger import report as paper_report
+from execution_evidence import capital_status, fingerprint, verified_readiness
+import os
+import sqlite3
 
 
 def row_time(row):
@@ -80,6 +85,27 @@ def main():
     records = [r for r in load_records(root / "trade_log.jsonl") if row_time(r) <= cutoff]
     result["readiness_counts"] = compute_readiness(records, rules["execution"]["dry_run_min_cycles_before_live"],
                                                  rules["execution"]["dry_run_min_successful_reviews_before_live"])
+    result["shadow_ledger"] = paper_report(root, cutoff, compact=True)
+    private_path = Path(os.environ.get("FRIESTRADER_PRIVATE_CONFIG") or Path.home() / ".codex/state/friestrader/local.json")
+    if private_path.is_file():
+        private = json.loads(private_path.read_text(encoding="utf-8-sig"))
+        capital_path = private_path.parent / "capital_basis.json"
+        capital = json.loads(capital_path.read_text(encoding="utf-8-sig")) if capital_path.is_file() else {}
+        account = rules["account_number"]
+        if account.startswith("YOUR_"):
+            account = private["account_number"]
+        result["capital_basis"] = capital_status(rules, capital, fingerprint(account))
+    path = root / "logs/runtime-evidence.sqlite"
+    result["verified_execution_evidence"] = {"verified_regular_dates": 0, "verified_previews": 0, "ready": False}
+    if path.is_file():
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as db:
+            result["verified_execution_evidence"] = verified_readiness(db, rules["execution"], cutoff)
+    snapshots = []
+    for path in sorted((root / "logs/phase-a-snapshots").glob("*.jsonl")):
+        rows = load_records(path)
+        if rows and rows[0].get("date") == cutoff.date().isoformat() and row_time(rows[0]) <= cutoff:
+            snapshots.append({"source": str(path), "funnel": summarize([], rows, cutoff)["latest_phase_a"]})
+    result["archived_phase_a_runs_today"] = snapshots
     if args.compact:
         for key in ("today_phase_b", "historical_phase_b"):
             result[key].pop("risk_block_reasons")

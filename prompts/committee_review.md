@@ -37,6 +37,23 @@ the rejected/no-signal split; do not label available counts as unavailable or
 claim that one overwritten proposal file contains all of today's Phase A runs.
 Broker fills, P&L, deposits and quote timestamps still need read-only verification.
 
+Use the appended `shadow_ledger` as a separately labelled hypothetical preview
+replay, never broker performance. It has its own $1000 virtual cash and FIFO
+lots, assumes instantaneous fills at observed ask/bid without fees/slippage, and
+only realizes P&L when a later accepted sell preview closes its inventory. Do not
+invent sells to create a win rate. During intraday review, refresh quotes for any
+listed shadow positions alongside normal research so future marks are recorded.
+At end of day, label the last observed mark timestamp and missing/stale marks;
+do not call an old mark current. This is not a complete strategy backtest.
+Use `archived_phase_a_runs_today` for the preserved runs; report archive coverage
+explicitly and do not claim earlier, unarchived history was recovered.
+Keep `readiness_counts` (legacy procedure) and `verified_execution_evidence`
+(forward timestamp-validated regular-session samples) separate. Neither is a
+profitability claim. Transferred holdings such as BOXX are external contributions,
+not strategy purchases or profit. Missing cost basis is unavailable, not zero.
+If `capital_basis.verified` is false, state the missing net-deposit evidence; do
+not convert NAV into deposited capital or modify any hard account/risk setting.
+
 The scheduled default disables the optional eight-role news desk. The four
 primary researchers perform the existing direct-source searches themselves.
 Do not replace the disabled desk with extra agents. When a helper or agent

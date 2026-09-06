@@ -47,6 +47,10 @@ if ($null -eq $codexCommand) {
     throw "Codex CLI was not found on PATH. Install it and run 'codex login' first."
 }
 $codexCommandPath = [System.IO.Path]::GetFullPath([string]$codexCommand.Source)
+if (-not $Preview) {
+    & python -X utf8 (Join-Path $scriptRoot "codex_hooks_check.py") --codex $codexCommandPath
+    if ($LASTEXITCODE -ne 0) { throw "Required execution-evidence hooks are not available; no model started." }
+}
 
 $codexArgs = @(
     "-C", $repoRoot,
@@ -54,6 +58,9 @@ $codexArgs = @(
     "-s", "workspace-write",
     "-c", "sandbox_workspace_write.network_access=true",
     "-c", "mcp_servers.robinhood-trading.required=true",
+    "-c", "features.hooks=true",
+    # Only after checking every loaded hook: own reviewed hooks + already trusted/managed hooks.
+    "--dangerously-bypass-hook-trust",
     "--search"
 )
 
@@ -206,6 +213,9 @@ New-Item -ItemType Directory -Force -Path $logsPath | Out-Null
 $centralTimeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Central Standard Time")
 $centralNow = [System.TimeZoneInfo]::ConvertTime([DateTimeOffset]::UtcNow, $centralTimeZone)
 $logPath = Join-Path $logsPath ("codex-phase-{0}-{1}.log" -f $phaseLower, $centralNow.ToString("yyyyMMdd-HHmmss"))
+$phaseRunId = [guid]::NewGuid().ToString()
+$tradeLogBeforePath = Join-Path $logsPath ("trade-log-before-" + $phaseRunId + ".jsonl")
+if ($Phase -eq "B") { Copy-Item -LiteralPath (Join-Path $repoRoot "trade_log.jsonl") -Destination $tradeLogBeforePath }
 $prompt = Get-Content -Raw -Encoding UTF8 -LiteralPath $promptPath
 $prompt = $prompt.Replace("<your Robinhood account_number>", $runtimeAccountNumber)
 $runtimeOverrides = [ordered]@{
@@ -214,6 +224,19 @@ $runtimeOverrides = [ordered]@{
         linked_accounts = $runtimeLinkedAccounts
     }
 } | ConvertTo-Json -Depth 4 -Compress
+$prompt += @"
+
+EXECUTION EVIDENCE
+Before every equity order preview, call get_equity_quotes for its symbol in this
+session. The launcher-installed MCP hooks verify regular-session bid/ask timestamps
+(maximum age 120 seconds, bid/ask skew 30 seconds), active state and positive,
+non-crossed prices. Re-fetch if stale. Before placement an exact successful preview
+must be no older than 60 seconds; the session is checked at the call itself.
+Do not bypass a denied call via another tool or shell. Log the exact check outcome.
+Original risk limits and order rules still apply. Never infer net deposits from
+current portfolio value or treat transferred BOXX holdings as strategy profit.
+Missing BOXX cost/lot basis is unavailable, never zero or an invented purchase.
+"@
 $prompt += @"
 
 PRIVATE RUNTIME OVERRIDES
@@ -241,6 +264,8 @@ Write-Host "Combined run log: $logPath"
 $previousGitConfigCount = [Environment]::GetEnvironmentVariable("GIT_CONFIG_COUNT", "Process")
 $previousPath = [Environment]::GetEnvironmentVariable("PATH", "Process")
 $previousChereInvoking = [Environment]::GetEnvironmentVariable("CHERE_INVOKING", "Process")
+$previousPhase = [Environment]::GetEnvironmentVariable("FRIESTRADER_PHASE", "Process")
+$previousRunId = [Environment]::GetEnvironmentVariable("FRIESTRADER_RUN_ID", "Process")
 $msysBashDirectory = "C:\msys64\usr\bin"
 if (-not (Test-Path -LiteralPath (Join-Path $msysBashDirectory "bash.exe") -PathType Leaf)) {
     throw "Required Bash executable not found: $msysBashDirectory\bash.exe"
@@ -257,6 +282,8 @@ $previousGitConfigValue = [Environment]::GetEnvironmentVariable($gitConfigValueN
 [Environment]::SetEnvironmentVariable($gitConfigKeyName, "safe.directory", "Process")
 [Environment]::SetEnvironmentVariable($gitConfigValueName, $repoRoot.Replace('\', '/'), "Process")
 [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", [string]($gitConfigIndex + 1), "Process")
+[Environment]::SetEnvironmentVariable("FRIESTRADER_PHASE", $Phase, "Process")
+[Environment]::SetEnvironmentVariable("FRIESTRADER_RUN_ID", $phaseRunId, "Process")
 
 $savedErrorActionPreference = $ErrorActionPreference
 try {
@@ -282,6 +309,8 @@ finally {
     $ErrorActionPreference = $savedErrorActionPreference
     [Environment]::SetEnvironmentVariable("PATH", $previousPath, "Process")
     [Environment]::SetEnvironmentVariable("CHERE_INVOKING", $previousChereInvoking, "Process")
+    [Environment]::SetEnvironmentVariable("FRIESTRADER_PHASE", $previousPhase, "Process")
+    [Environment]::SetEnvironmentVariable("FRIESTRADER_RUN_ID", $previousRunId, "Process")
     [Environment]::SetEnvironmentVariable($gitConfigKeyName, $previousGitConfigKey, "Process")
     [Environment]::SetEnvironmentVariable($gitConfigValueName, $previousGitConfigValue, "Process")
     [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", $previousGitConfigCount, "Process")
@@ -334,6 +363,10 @@ if ($Phase -eq "A") {
     }
 }
 
+$finalizeArgs = @("-X", "utf8", (Join-Path $scriptRoot "phase_output.py"), "--phase", $Phase, "--run-id", $phaseRunId)
+if ($Phase -eq "B") { $finalizeArgs += @("--before", $tradeLogBeforePath) }
+& python @finalizeArgs
+if ($LASTEXITCODE -ne 0) { throw "Phase output/evidence validation failed; refusing to commit or continue." }
 $outputStatusArguments = @("status", "--porcelain", "--") + $outputFileNames
 $outputStatus = @(Invoke-FriesTraderGit -GitArguments $outputStatusArguments)
 if ($outputStatus.Count -gt 0) {
