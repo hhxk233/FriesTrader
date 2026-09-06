@@ -1,5 +1,9 @@
 # FriesTrader
 
+> This fork's current Codex CLI schedule, operational boundaries and audit commands
+> are documented in [OPERATIONS.md](OPERATIONS.md). The upstream description below
+> describes the original Claude-based template, not this fork's deployed schedule.
+
 ![License](https://img.shields.io/github/license/YizhiSong/FriesTrader)
 ![GitHub stars](https://img.shields.io/github/stars/YizhiSong/FriesTrader)
 

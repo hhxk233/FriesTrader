@@ -25,7 +25,7 @@ param(
     [double]$OpusMaxBudgetUsd = 1.0,
 
     [ValidateSet("on", "off")]
-    [string]$FreeNewsDesk = "on",
+    [string]$FreeNewsDesk = "off",
 
     [ValidateRange(1, 8)]
     [int]$FreeNewsAgents = 8,
@@ -45,6 +45,8 @@ param(
     [ValidatePattern('^(?:[01]\d|2[0-3]):[0-5]\d$')]
     [string]$EndOfDayCutoffCentral = "15:00",
 
+    [switch]$PostCloseReview,
+
     [switch]$Preview
 )
 
@@ -59,6 +61,24 @@ if ([Environment]::GetEnvironmentVariable($committeeActiveVariable, "Process") -
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
+$session = $null
+if (-not $Preview) {
+    $sessionText = & python -X utf8 (Join-Path $scriptRoot "market_session.py")
+    if ($LASTEXITCODE -ne 0) { throw "Trading calendar check failed before committee." }
+    $session = $sessionText | ConvertFrom-Json
+    if ($session.state -notin @("regular", "post_close")) {
+        Write-Output "committee_skipped=outside_review_session"
+        Write-Output ("market_state=" + $session.state)
+        exit 0
+    }
+    if ($session.state -eq "post_close") {
+        $PostCloseReview = $true
+        $ReviewMode = "end_of_day"
+    }
+    elseif ($PostCloseReview) {
+        throw "PostCloseReview is only available after the exchange closes."
+    }
+}
 $promptPath = Join-Path $repoRoot "prompts\committee_review.md"
 $opusHelperPath = Join-Path $scriptRoot "consult_opus.ps1"
 $freeNewsHelperPath = Join-Path $scriptRoot "run_free_news_desk.ps1"
@@ -155,7 +175,10 @@ $endOfDayCutoff = [TimeSpan]::ParseExact(
     [System.Globalization.CultureInfo]::InvariantCulture
 )
 $resolvedReviewMode = if ($ReviewMode -eq "auto") {
-    if ($centralNow.TimeOfDay -ge $endOfDayCutoff) { "end_of_day" } else { "intraday" }
+    if ($null -ne $session) {
+        if ($session.state -eq "regular") { "intraday" } else { "end_of_day" }
+    }
+    elseif ($centralNow.TimeOfDay -ge $endOfDayCutoff) { "end_of_day" } else { "intraday" }
 }
 else {
     $ReviewMode
@@ -266,6 +289,22 @@ if ($mcpExitCode -ne 0) {
 }
 
 $prompt = Get-Content -Raw -Encoding UTF8 -LiteralPath $promptPath
+$statisticsText = & python -X utf8 (Join-Path $scriptRoot "audit_history.py") --compact --cutoff $centralNow.ToString("yyyy-MM-ddTHH:mm:sszzz")
+if ($LASTEXITCODE -ne 0) { throw "Deterministic history audit failed before committee." }
+$statisticsText | ConvertFrom-Json | Out-Null
+$prompt += "`n`nPROGRAM-COMPUTED LOCAL STATISTICS (through committee start):`n" + ($statisticsText -join "`n")
+if ($PostCloseReview) {
+    $prompt += @"
+
+POST-CLOSE REVIEW ONLY
+The scheduled caller has established that today's exchange session has closed.
+Complete the end-of-day discussion and reconciliation from the latest saved Phase A
+and today's completed Phase B records. Do not request a new Phase A or Phase B.
+Set run_phase_b=false and executive_decision=skip_phase_b. The market-calendar
+schedule is already resolved: do not debate it or escalate this scheduling fact
+to Opus. Opus remains available for material unresolved research evidence.
+"@
+}
 $prompt = $prompt.Replace("<central_date>", $centralNow.ToString("yyyy-MM-dd"))
 $prompt = $prompt.Replace("<review_mode>", $resolvedReviewMode)
 $prompt = $prompt.Replace("<committee_report_path>", $reportPath)
@@ -747,6 +786,9 @@ if (-not [long]::TryParse([string]$decision.personalization_revision, [ref]$deci
 if (($decision.run_phase_b -and $decision.executive_decision -ne "run_phase_b") -or
     (-not $decision.run_phase_b -and $decision.executive_decision -ne "skip_phase_b")) {
     Restore-CommitteeFilesAndThrow "Committee decision fields disagree; the original committee-owned files were restored."
+}
+if ($PostCloseReview -and $decision.run_phase_b) {
+    Restore-CommitteeFilesAndThrow "Post-close review requested Phase B; committee-owned changes restored."
 }
 if ([string]$decision.review_mode -ne $resolvedReviewMode -or
     [bool]$decision.daily_statistics_written -ne ($resolvedReviewMode -eq "end_of_day")) {

@@ -15,6 +15,16 @@ $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
+if (-not $Preview) {
+    $sessionText = & python -X utf8 (Join-Path $scriptRoot "market_session.py")
+    if ($LASTEXITCODE -ne 0) { throw "Trading calendar check failed before Phase $Phase." }
+    $session = $sessionText | ConvertFrom-Json
+    if (-not $session.is_regular_session) {
+        Write-Output "phase_skipped=outside_regular_session"
+        Write-Output ("market_state=" + $session.state)
+        exit 0
+    }
+}
 $phaseLower = $Phase.ToLowerInvariant()
 $promptPath = Join-Path $repoRoot "prompts\phase_$phaseLower.md"
 $riskRulesPath = Join-Path $repoRoot "risk_rules.json"

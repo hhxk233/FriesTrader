@@ -29,6 +29,28 @@ Free news result path: <free_news_result_path>
 
 Use the latest Phase A proposals plus fresh Robinhood read-only evidence and current market/company news. Spawn the four existing project researchers in parallel for round one, then conduct the Skill's targeted cross-examination round before the chair decides.
 
+Use the appended program-computed statistics for all local counts. Readiness is
+computed through this committee's start, not copied from an older cycle's
+`dry_run_dates_before_cycle`. Keep regular-session evidence separate from the
+configured all-date readiness counter. The latest Phase A summary buckets give
+the rejected/no-signal split; do not label available counts as unavailable or
+claim that one overwritten proposal file contains all of today's Phase A runs.
+Broker fills, P&L, deposits and quote timestamps still need read-only verification.
+
+The scheduled default disables the optional eight-role news desk. The four
+primary researchers perform the existing direct-source searches themselves.
+Do not replace the disabled desk with extra agents. When a helper or agent
+returns a running session, wait for terminal completion before reading its
+result or declaring it failed. Wait for every batch member individually; a
+wait returning one completed member does not mean its peers are finished.
+Do not close still-running agents to reclaim slots.
+
+Strategy-library `candidate`/`observing` entries may preserve a precisely sourced
+research hypothesis before fills exist. Use zero only for verified zero samples,
+record contrary evidence and the next test, and do not claim an edge or promote
+an entry from previews. Lack of fills alone is not a reason to discard an
+otherwise attributable observation; follow the existing library schema.
+
 Use these evidence-resolution and handoff rules when applying the existing committee Skill:
 
 - Treat an authoritative primary source that conclusively resolves a Phase A wording or classification error as resolved evidence. Correct the record explicitly in the report and assess whether the correction changes direction, conviction, invalidation, or risk. A resolved wording defect is not by itself an unresolved accounting-basis mismatch and is not by itself a reason to require another Phase A run before a dry-run Phase B handoff.
