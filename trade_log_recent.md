@@ -1,10 +1,17 @@
-# 2026-09-05
+# 2026-09-09
 
 ## Loss-limit check
 
 - Daily and weekly realized P&L were $0.00 (0.0% of the $1,000 starting-capital base), so new entries and top-ups were not halted.
 
+## Separate sleeve
+
+- BOXX was the only open equity position and the only long proposal. It was classified as the operator-authorized separate cash-reserve sleeve and excluded from stock stop-loss, take-profit, conviction-trim, candidate, slot-count, and order checks in this Phase B run.
+
 ## Candidates
 
-- IOT (new entry, high conviction): rejected because its $44.11 ask was 9.7127% above the $40.205 thesis-time price and 10.949% above the 20-day average of $39.757, exceeding both entry ceilings.
-- DOCU (new entry, low conviction): rejected because its $69.00 ask was 10.37% above the 20-day average of $62.517, exceeding the 10% entry-extension ceiling.
+- No ordinary new-entry, top-up, or exit-existing candidates were eligible for Phase B processing. BRZE and DYN were avoid proposals already handled by Phase A.
+
+## Execution
+
+- No orders were reviewed or placed. Execution mode remained dry-run, and live readiness before this cycle was 9 of 10 required distinct dry-run dates with 31 of 5 required successful previews.
