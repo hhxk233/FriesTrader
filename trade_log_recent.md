@@ -1,17 +1,17 @@
 # 2026-09-09
 
-## Loss-limit check
+## Loss limits
 
-- Daily and weekly realized P&L were $0.00 (0.0% of the $1,000 starting-capital base), so new entries and top-ups were not halted.
+- Daily realized P&L: $0.00 (0.00% of $1,000.00 starting capital); 5.00% loss limit not breached.
+- Weekly realized P&L: $0.00 (0.00% of $1,000.00 starting capital); 10.00% loss limit not breached.
+- New entries and top-ups remained enabled.
 
-## Separate sleeve
+## Separate cash-reserve sleeve
 
-- BOXX was the only open equity position and the only long proposal. It was classified as the operator-authorized separate cash-reserve sleeve and excluded from stock stop-loss, take-profit, conviction-trim, candidate, slot-count, and order checks in this Phase B run.
+- BOXX was classified as the operator-authorized separate cash-reserve sleeve and excluded from ordinary Phase B candidates, stock risk checks, exit handling, stock-slot counts, and order preview/placement. Full broker total value still included BOXX, and BOXX value was not treated as cash.
 
 ## Candidates
 
-- No ordinary new-entry, top-up, or exit-existing candidates were eligible for Phase B processing. BRZE and DYN were avoid proposals already handled by Phase A.
-
-## Execution
-
-- No orders were reviewed or placed. Execution mode remained dry-run, and live readiness before this cycle was 9 of 10 required distinct dry-run dates with 31 of 5 required successful previews.
+- XP (new, high): rejected because the $19.23 ask was 10.4252% above its $17.4145 20-day average, exceeding the 10% extension ceiling.
+- SSL (new, high): rejected because the $14.61 ask was 21.8973% above its $11.9855 20-day average, exceeding the 10% extension ceiling.
+- NEOG (new, medium): approved and sized at $121.06. The fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts; no live order was placed because execution mode is `dry_run`.
