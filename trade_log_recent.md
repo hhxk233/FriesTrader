@@ -12,6 +12,6 @@
 
 ## Candidates
 
-- XP (new, high): rejected because the $19.23 ask was 10.4252% above its $17.4145 20-day average, exceeding the 10% extension ceiling.
-- SSL (new, high): rejected because the $14.61 ask was 21.8973% above its $11.9855 20-day average, exceeding the 10% extension ceiling.
-- NEOG (new, medium): approved and sized at $121.06. The fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts; no live order was placed because execution mode is `dry_run`.
+- XP (new, high): rejected because the $19.22 ask was 10.3678% above its $17.4145 20-day average, exceeding the 10% extension ceiling.
+- NEOG (new, medium): approved and sized at $121.07. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts; no live order was placed because execution mode is `dry_run`.
+- LFST (new, low): approved and sized at $60.53. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts; no live order was placed because execution mode is `dry_run`.
