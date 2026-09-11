@@ -14,8 +14,5 @@ Phase B ran in `dry_run` mode. No live order was placed.
 
 ## Candidates
 
-- XP (new, high): rejected because the $19.89 ask was 11.6318% above its $17.8175 20-day average, exceeding the 10% extension ceiling.
-- HAFN (new, low): rejected because the $9.53 ask was 13.8998% above its $8.367 20-day average, exceeding the 10% extension ceiling.
-- AEHR (new, high): rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
-- PATH (new, high): rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
-- DOCU (new, low): approved and sized at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $66.03 ask (about 0.916856 shares); no live order was placed because execution mode is `dry_run`.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
+- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $66.01 ask (about 0.917134 shares); no live order was placed because execution mode is `dry_run`.
