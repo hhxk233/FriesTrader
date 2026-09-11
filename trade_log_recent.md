@@ -14,5 +14,8 @@ Phase B ran in `dry_run` mode. No live order was placed.
 
 ## Candidates
 
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $66.01 ask (about 0.917134 shares); no live order was placed because execution mode is `dry_run`.
+- NAVN (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- VIST (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- INGM (new, medium): passed the entry gate and was approved at $121.08. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $27.51 ask (about 4.401309 shares); no live order was placed because execution mode is `dry_run`.
+- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $65.94 ask (about 0.918107 shares); no live order was placed because execution mode is `dry_run`.
