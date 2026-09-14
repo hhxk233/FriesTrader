@@ -1,6 +1,6 @@
 # 2026-09-14
 
-Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invalidating developments for the three ordinary long candidates. No live order was placed.
+Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invalidating developments for the six ordinary long candidates. No live order was placed.
 
 ## Loss limits
 
@@ -14,6 +14,9 @@ Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invali
 
 ## Candidates
 
+- NAVN (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
 - PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $69.80 ask (about 0.867335 shares); no live order was placed because execution mode is `dry_run`.
-- DFTX (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $39.75 ask (about 1.523019 shares); no live order was placed because execution mode is `dry_run`.
+- SAIL (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
+- SRRK (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
+- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $69.47 ask (about 0.871455 shares); no live order was placed because execution mode is `dry_run`.
+- DFTX (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $40.23 ask (about 1.504847 shares); no live order was placed because execution mode is `dry_run`.
