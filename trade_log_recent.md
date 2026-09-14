@@ -1,6 +1,6 @@
-# 2026-09-11
+# 2026-09-14
 
-Phase B ran in `dry_run` mode. No live order was placed.
+Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invalidating developments for the eight ordinary long candidates. No live order was placed.
 
 ## Loss limits
 
@@ -14,8 +14,11 @@ Phase B ran in `dry_run` mode. No live order was placed.
 
 ## Candidates
 
-- NAVN (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- AEHR (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
 - PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
-- VIST (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
-- INGM (new, medium): passed the entry gate and was approved at $121.08. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $27.51 ask (about 4.401309 shares); no live order was placed because execution mode is `dry_run`.
-- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $65.94 ask (about 0.918107 shares); no live order was placed because execution mode is `dry_run`.
+- BHC (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- ROKU (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.90 minimum buffer.
+- HAFN (new, high): rejected by the entry-extension gate because its $9.35 ask was 10.5789% above the $8.4555 20-day average, exceeding the 10% limit.
+- RUM (new, medium): passed the entry gate and was approved at $121.08. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at an $8.27 ask (about 14.640871 shares); no live order was placed because execution mode is `dry_run`.
+- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $67.54 ask (about 0.896358 shares); no live order was placed because execution mode is `dry_run`.
+- DFTX (new, low): passed the entry gate, then was rejected by sizing because a $60.54 allocation after higher-ranked approvals would leave $57.89 cash, below the $100.90 minimum buffer.
