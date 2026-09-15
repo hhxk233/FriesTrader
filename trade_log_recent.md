@@ -1,6 +1,6 @@
-# 2026-09-14
+# 2026-09-15
 
-Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invalidating developments for the six ordinary long candidates. No live order was placed.
+Phase B ran in `dry_run` mode. No candidate reached order review, and no live order was placed.
 
 ## Loss limits
 
@@ -10,13 +10,13 @@ Phase B ran in `dry_run` mode. Monday weekend-news checks found no thesis-invali
 
 ## Separate cash-reserve sleeve
 
-- BOXX was classified as the operator-authorized separate cash-reserve sleeve and excluded from ordinary Phase B candidates, stock risk checks, exit handling, stock-slot counts, and order preview/placement. Full broker total value still included BOXX, and BOXX value was not treated as cash.
+- BOXX was classified as the operator-authorized separate cash-reserve sleeve and excluded from ordinary Phase B candidates, stock risk checks, exit handling, stock-slot counts, and order preview/placement. Full broker total value included BOXX, while its value was not treated as cash.
 
 ## Candidates
 
-- NAVN (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- SAIL (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- SRRK (new, high): passed the entry gate, then was rejected by sizing because a $201.81 allocation would leave $98.24 cash, below the $100.91 minimum buffer.
-- DOCU (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $69.47 ask (about 0.871455 shares); no live order was placed because execution mode is `dry_run`.
-- DFTX (new, low): passed the entry gate and was approved at $60.54. Fresh regular-session quote evidence passed, and the Robinhood preview succeeded with no blocking alerts at a $40.23 ask (about 1.504847 shares); no live order was placed because execution mode is `dry_run`.
+- DOCU (new, low): rejected because the $70.36 ask was 10.1207% above its $63.8935 20-day average, exceeding the 10% entry-extension ceiling.
+- HAFN (new, high): rejected because the $9.40 ask was 10.1347% above its $8.5350 20-day average, exceeding the 10% entry-extension ceiling.
+- WAY (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
+- IOT (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
+- PBF (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
