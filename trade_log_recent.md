@@ -14,5 +14,7 @@ Phase B ran in `dry_run` mode. No candidate passed all risk and sizing checks, s
 
 ## Candidates
 
-- DOCU (new, high): rejected because the $71.12 ask was 10.2721% above its $64.4950 20-day average, exceeding the 10% entry-extension ceiling.
+- TRMD (new, high): rejected because the $36.53 ask was 10.4927% above its $33.0610 20-day average, exceeding the 10% entry-extension ceiling.
 - PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
+- DFTX (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
+- DOCU (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
