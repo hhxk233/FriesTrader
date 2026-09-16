@@ -1,6 +1,6 @@
-# 2026-09-15
+# 2026-09-16
 
-Phase B ran in `dry_run` mode. No candidate reached order review, and no live order was placed.
+Phase B ran in `dry_run` mode. Two candidates passed risk enforcement and completed broker order review; no live order was placed.
 
 ## Loss limits
 
@@ -14,9 +14,8 @@ Phase B ran in `dry_run` mode. No candidate reached order review, and no live or
 
 ## Candidates
 
-- DOCU (new, low): rejected because the $70.36 ask was 10.1207% above its $63.8935 20-day average, exceeding the 10% entry-extension ceiling.
-- HAFN (new, high): rejected because the $9.40 ask was 10.1347% above its $8.5350 20-day average, exceeding the 10% entry-extension ceiling.
-- WAY (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
-- IOT (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
-- PBF (new, high): passed the entry gate, then was rejected by sizing because a $201.80 allocation would leave $98.25 cash, below the $100.90 minimum buffer.
+- DOCU (new, low): rejected because the $71.28 ask was 10.5202% above its $64.4950 20-day average, exceeding the 10% entry-extension ceiling.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
+- LIFE (new, high): passed the entry gate and its 1.2232% thesis-price gap did not invalidate the thesis, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
+- FPS (new, low): approved for $60.56 and successfully previewed at a $34.01 ask (about 1.780653 shares); no broker alerts.
+- PBF (new, low): approved for $60.56 and successfully previewed at a $74.75 ask (about 0.810167 shares); no broker alerts.
