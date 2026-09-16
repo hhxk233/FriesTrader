@@ -1,6 +1,6 @@
 # 2026-09-16
 
-Phase B ran in `dry_run` mode. Two candidates passed risk enforcement and completed broker order review; no live order was placed.
+Phase B ran in `dry_run` mode. No candidate passed all risk and sizing checks, so no order was reviewed or placed.
 
 ## Loss limits
 
@@ -14,8 +14,5 @@ Phase B ran in `dry_run` mode. Two candidates passed risk enforcement and comple
 
 ## Candidates
 
-- DOCU (new, low): rejected because the $71.28 ask was 10.5202% above its $64.4950 20-day average, exceeding the 10% entry-extension ceiling.
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
-- LIFE (new, high): passed the entry gate and its 1.2232% thesis-price gap did not invalidate the thesis, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
-- FPS (new, low): approved for $60.56 and successfully previewed at a $34.01 ask (about 1.780653 shares); no broker alerts.
-- PBF (new, low): approved for $60.56 and successfully previewed at a $74.75 ask (about 0.810167 shares); no broker alerts.
+- DOCU (new, high): rejected because the $71.12 ask was 10.2721% above its $64.4950 20-day average, exceeding the 10% entry-extension ceiling.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
