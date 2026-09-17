@@ -1,6 +1,6 @@
-# 2026-09-16
+# 2026-09-17
 
-Phase B ran in `dry_run` mode. No candidate passed all risk and sizing checks, so no order was reviewed or placed.
+Phase B ran in `dry_run` mode. Two candidates passed all risk and sizing checks and received successful broker previews; no live order was placed.
 
 ## Loss limits
 
@@ -14,7 +14,8 @@ Phase B ran in `dry_run` mode. No candidate passed all risk and sizing checks, s
 
 ## Candidates
 
-- TRMD (new, high): rejected because the $36.53 ask was 10.4927% above its $33.0610 20-day average, exceeding the 10% entry-extension ceiling.
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
-- DFTX (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
-- DOCU (new, high): passed the entry gate, then was rejected by sizing because a $201.85 allocation would leave $98.20 cash, below the $100.93 minimum buffer.
+- TEM (new, low): rejected because the $79.69 ask was 22.6387% above its $64.9795 20-day average, exceeding the 10% entry-extension ceiling.
+- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
+- SAIL (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
+- DOCU (new, low): approved at $60.56; the dry-run broker preview succeeded with no blocking alert.
+- MGNI (new, low): approved at $60.56; the dry-run broker preview succeeded with no blocking alert.
