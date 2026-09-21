@@ -1,6 +1,6 @@
-# 2026-09-17
+# 2026-09-21
 
-Phase B ran in `dry_run` mode. Two candidates passed all risk and sizing checks and received successful broker previews; no live order was placed.
+Phase B ran in `dry_run` mode. The Monday weekend-news checks and all five mechanical buy gates passed, but every candidate failed sizing, so no broker order was reviewed or placed.
 
 ## Loss limits
 
@@ -14,8 +14,8 @@ Phase B ran in `dry_run` mode. Two candidates passed all risk and sizing checks 
 
 ## Candidates
 
-- TEM (new, low): rejected because the $79.69 ask was 22.6387% above its $64.9795 20-day average, exceeding the 10% entry-extension ceiling.
-- PATH (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
-- SAIL (new, high): passed the entry gate, then was rejected by sizing because a $201.86 allocation would leave $98.19 cash, below the $100.93 minimum buffer.
-- DOCU (new, low): approved at $60.56; the dry-run broker preview succeeded with no blocking alert.
-- MGNI (new, low): approved at $60.56; the dry-run broker preview succeeded with no blocking alert.
+- WAY (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- PATH (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- DOCU (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- IOT (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- PBF (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
