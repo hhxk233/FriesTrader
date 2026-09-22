@@ -1,6 +1,6 @@
-# 2026-09-21
+# 2026-09-22
 
-Phase B ran in `dry_run` mode. The Monday weekend-news checks and all five mechanical buy gates passed, but every candidate failed sizing, so no broker order was reviewed or placed.
+Phase B ran in `dry_run` mode. All eight ordinary long candidates passed the mechanical buy gate; sizing approved two broker previews and rejected six. No live order was placed.
 
 ## Loss limits
 
@@ -14,8 +14,11 @@ Phase B ran in `dry_run` mode. The Monday weekend-news checks and all five mecha
 
 ## Candidates
 
-- WAY (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
 - PATH (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- DOCU (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- BRZE (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
 - IOT (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- PBF (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- FRO (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- LIFE (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- TRMD (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
+- DOCU (new, low): approved at $60.57; the Robinhood dry-run preview succeeded with no broker alerts.
+- ADPT (new, low): approved at $60.57; the Robinhood dry-run preview succeeded with no broker alerts.
