@@ -1,6 +1,6 @@
 # 2026-09-22
 
-Phase B ran in `dry_run` mode. All eight ordinary long candidates passed the mechanical buy gate; sizing approved two broker previews and rejected six. No live order was placed.
+Phase B ran in `dry_run` mode. Six ordinary long candidates were considered, two broker previews succeeded, and no live order was placed.
 
 ## Loss limits
 
@@ -14,11 +14,9 @@ Phase B ran in `dry_run` mode. All eight ordinary long candidates passed the mec
 
 ## Candidates
 
-- PATH (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- BRZE (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- IOT (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- FRO (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- LIFE (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- TRMD (new, high): rejected by sizing because a $201.91 allocation would leave $98.14 cash, below the $100.95 minimum buffer.
-- DOCU (new, low): approved at $60.57; the Robinhood dry-run preview succeeded with no broker alerts.
-- ADPT (new, low): approved at $60.57; the Robinhood dry-run preview succeeded with no broker alerts.
+- PATH (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
+- BRZE (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
+- IOT (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
+- FSLY (new, medium): rejected because its $25.69 ask was 11.3978% above the 20-day average, exceeding the 10% extension cap.
+- TRMD (new, low): approved at $60.58; the Robinhood dry-run preview succeeded with no broker alerts.
+- DOCU (new, low): approved at $60.58; the Robinhood dry-run preview succeeded with no broker alerts.
