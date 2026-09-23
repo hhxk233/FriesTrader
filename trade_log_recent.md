@@ -1,6 +1,6 @@
-# 2026-09-22
+# 2026-09-23
 
-Phase B ran in `dry_run` mode. Five ordinary long candidates were considered, one broker preview was attempted, and no live order was placed.
+Phase B ran in `live` mode. Four ordinary long candidates were considered; none passed all risk and sizing checks, so no broker preview or live order was attempted.
 
 ## Loss limits
 
@@ -14,8 +14,7 @@ Phase B ran in `dry_run` mode. Five ordinary long candidates were considered, on
 
 ## Candidates
 
-- BRZE (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
-- DOCU (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
-- IOT (new, high): rejected by sizing because a $201.92 allocation would leave $98.13 cash, below the $100.96 minimum buffer.
-- INOD (new, medium): rejected because its $70.50 ask was 25.9733% above the 20-day average, exceeding the 10% extension cap.
-- PATH (new, medium): approved and sized at $121.15, but the mandatory preview was blocked outside the regular session; no order was placed.
+- PATH (new, high): rejected by sizing because a $201.98 allocation would leave $98.07 cash, below the $100.99 minimum buffer.
+- DOCU (new, high): rejected by sizing because a $201.98 allocation would leave $98.07 cash, below the $100.99 minimum buffer.
+- CZR (new, high): rejected by sizing because a $201.98 allocation would leave $98.07 cash, below the $100.99 minimum buffer.
+- FSLY (new, high): rejected because its $30.35 ask was 30.7147% above the 20-day average, exceeding the 10% extension cap.
